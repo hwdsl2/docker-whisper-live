@@ -1,0 +1,65 @@
+#
+# Copyright (C) 2026 Lin Song <linsongui@gmail.com>
+#
+# This work is licensed under the MIT License
+# See: https://opensource.org/licenses/MIT
+
+FROM python:3.12-slim
+
+WORKDIR /opt/src
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+RUN set -x \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends curl gcc libc6-dev portaudio19-dev \
+    && python3 -m venv /opt/venv \
+    && ARCH=$(uname -m) \
+    && if [ "$ARCH" = "x86_64" ]; then \
+         pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; \
+       else \
+         pip install --no-cache-dir torch; \
+       fi \
+    && pip install --no-cache-dir \
+         "whisper-live" \
+         faster-whisper \
+         fastapi \
+         uvicorn \
+         python-multipart \
+    && if [ "$ARCH" != "x86_64" ]; then \
+         pip list --format=freeze | grep -iE '^nvidia[_-]|^cuda[_-]|^triton' | cut -d= -f1 | xargs -r pip uninstall -y; \
+       fi \
+    && apt-get purge -y --auto-remove gcc libc6-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && find /opt/venv -name '*.pyi' -delete \
+    && { find /opt/venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true; } \
+    && mkdir -p /var/lib/whisper-live
+
+COPY ./run.sh /opt/src/run.sh
+COPY ./manage.sh /opt/src/manage.sh
+COPY ./LICENSE.md /opt/src/LICENSE.md
+RUN chmod 755 /opt/src/run.sh /opt/src/manage.sh \
+    && ln -s /opt/src/manage.sh /usr/local/bin/whisper_live_manage
+
+EXPOSE 9090/tcp
+EXPOSE 8000/tcp
+VOLUME ["/var/lib/whisper-live"]
+CMD ["/opt/src/run.sh"]
+
+ARG BUILD_DATE
+ARG VERSION
+ARG VCS_REF
+ENV IMAGE_VER=$BUILD_DATE
+
+LABEL maintainer="Lin Song <linsongui@gmail.com>" \
+    org.opencontainers.image.created="$BUILD_DATE" \
+    org.opencontainers.image.version="$VERSION" \
+    org.opencontainers.image.revision="$VCS_REF" \
+    org.opencontainers.image.authors="Lin Song <linsongui@gmail.com>" \
+    org.opencontainers.image.title="WhisperLive Real-Time Speech-to-Text on Docker" \
+    org.opencontainers.image.description="Docker image to run a WhisperLive real-time speech-to-text server with WebSocket streaming and an OpenAI-compatible REST API." \
+    org.opencontainers.image.url="https://github.com/hwdsl2/docker-whisper-live" \
+    org.opencontainers.image.source="https://github.com/hwdsl2/docker-whisper-live" \
+    org.opencontainers.image.documentation="https://github.com/hwdsl2/docker-whisper-live"

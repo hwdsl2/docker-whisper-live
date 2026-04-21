@@ -1,0 +1,544 @@
+[English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
+
+# WhisperLive 实时语音转文字 Docker 镜像
+
+[![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 **WebSocket 流式传输**，以及用于文件转录的 **OpenAI 兼容 REST API**。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
+
+**功能特性：**
+
+- 实时 WebSocket 流式传输 — 以近乎即时的方式转录实时麦克风音频或音频流
+- OpenAI 兼容 REST API — 提供 `POST /v1/audio/transcriptions` 文件转录接口；任何调用 OpenAI Whisper API 的应用只需修改一行配置即可切换
+- 支持所有 Whisper 模型：`tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 等
+- 语音活动检测（VAD）— 自动跳过静音段，实现更快、更干净的转录
+- 通过辅助脚本 (`whisper_live_manage`) 管理模型
+- 音频数据留在您的服务器上，不发送给第三方
+- 离线/隔离网络模式 — 使用预先缓存的模型无需互联网访问 (`WHISPERLIVE_LOCAL_ONLY`)
+- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) 自动构建和发布
+- 通过 Docker 数据卷持久化模型缓存，与 `docker-whisper` 缓存布局兼容
+- 多架构支持：`linux/amd64`、`linux/arm64`
+
+**另提供：**
+
+- AI/音频：[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)
+- VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)
+
+**提示：** WhisperLive、Whisper、Kokoro、Embeddings 和 LiteLLM 可以[配合使用](#与其他-ai-服务配合使用)，在您自己的服务器上搭建完整的私密 AI 系统。
+
+## WhisperLive 与 Whisper 的选择
+
+| | [docker-whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md) | **docker-whisper-live** |
+|---|---|---|
+| **使用场景** | 转录完整音频文件 | 实时麦克风/音频流 |
+| **协议** | HTTP REST | WebSocket（流式）+ HTTP REST |
+| **延迟** | 完整文件处理后返回结果 | 近实时，逐词输出 |
+| **适合** | 会议录音、上传的音频文件 | 浏览器采集、RTSP 流、实时字幕 |
+| **镜像大小** | ~180 MB | ~800 MB（包含用于 VAD 的 PyTorch） |
+
+## 快速开始
+
+使用以下命令启动 WhisperLive 服务器：
+
+```bash
+docker run \
+    --name whisper-live \
+    --restart=always \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    -d hwdsl2/whisper-live-server
+```
+
+**注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。
+
+首次客户端连接时，Whisper `base` 模型（约 145 MB）将自动下载并缓存。查看日志确认服务器已就绪：
+
+```bash
+docker logs whisper-live
+```
+
+看到 "WhisperLive real-time transcription server is ready" 后：
+
+**连接实时 WebSocket 客户端：**
+
+```
+ws://您的服务器IP:9090
+```
+
+**或通过 REST API 转录文件：**
+
+```bash
+curl http://您的服务器IP:8000/v1/audio/transcriptions \
+    -F file=@audio.mp3 \
+    -F model=whisper-1
+```
+
+**响应：**
+```json
+{"text": "转录的文字内容显示在这里。"}
+```
+
+## 系统要求
+
+- 已安装 Docker 的 Linux 服务器（本地或云端）
+- 支持的架构：`amd64`（x86_64）、`arm64`（例如 Raspberry Pi 4/5、AWS Graviton）
+- 最低内存：约需 1.5 GB 可用内存（PyTorch + base 模型）。镜像本身约 2 GB（压缩后）。
+- 首次启动需要访问互联网以下载模型（之后模型将缓存在本地）。使用预先缓存的模型并设置 `WHISPERLIVE_LOCAL_ONLY=true` 时不需要网络访问。
+- **仅 CPU 镜像：** 本镜像仅支持 CPU 运行。`tiny` 和 `base` 模型在 CPU 上可满足实时 WebSocket 流式传输的需求。`small` 及更大的模型在 CPU 上速度较慢，可能无法实时跟上音频流——仅在转录精度比实时延迟更重要时使用这些模型。
+
+如需面向公网部署，请参阅[使用反向代理](#使用反向代理)以启用 HTTPS。
+
+## 下载
+
+从 [Docker Hub](https://hub.docker.com/r/hwdsl2/whisper-live-server/) 获取可信构建：
+
+```bash
+docker pull hwdsl2/whisper-live-server
+```
+
+也可从 [Quay.io](https://quay.io/repository/hwdsl2/whisper-live-server) 下载：
+
+```bash
+docker pull quay.io/hwdsl2/whisper-live-server
+docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
+```
+
+支持平台：`linux/amd64` 和 `linux/arm64`。
+
+## 环境变量
+
+所有变量均为可选。如未设置，将自动使用安全的默认值。
+
+此 Docker 镜像使用以下变量，可在 `env` 文件中声明（参见[示例](whisper-live.env.example)）：
+
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `WHISPERLIVE_MODEL` | 使用的 Whisper 模型。请参阅[模型列表](#切换模型)。 | `base` |
+| `WHISPERLIVE_LANGUAGE` | 默认转录语言。使用 BCP-47 语言代码（如 `zh`、`en`、`ja`）或 `auto` 自动检测。 | `auto` |
+| `WHISPERLIVE_PORT` | 实时流式客户端的 WebSocket 端口（1–65535）。 | `9090` |
+| `WHISPERLIVE_REST_PORT` | OpenAI 兼容 REST API 的 HTTP 端口（1–65535）。 | `8000` |
+| `WHISPERLIVE_MAX_CLIENTS` | 最大同时 WebSocket 客户端连接数。 | `4` |
+| `WHISPERLIVE_MAX_CONNECTION_TIME` | WebSocket 最大连接时长（秒）。超过此时长的客户端将被自动断开。 | `600` |
+| `WHISPERLIVE_USE_VAD` | 启用语音活动检测。设为 `true` 时自动检测并跳过静音段。设为 `false` 持续处理所有音频。 | `true` |
+| `WHISPERLIVE_THREADS` | 推理使用的 CPU 线程数。设为物理核心数可获得最佳延迟。 | `2` |
+| `WHISPERLIVE_LOG_LEVEL` | 日志级别：`DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`。 | `INFO` |
+| `WHISPERLIVE_LOCAL_ONLY` | 设为任意非空值（如 `true`）时，禁止所有 HuggingFace 模型下载。适用于预先缓存模型的离线或隔离网络部署。 | *（未设置）* |
+
+**注：** 在 `env` 文件中，值可用单引号括起，例如 `VAR='value'`。`=` 两侧不要有空格。如更改 `WHISPERLIVE_PORT` 或 `WHISPERLIVE_REST_PORT`，请相应更新 `docker run` 命令中的 `-p` 参数。
+
+使用 `env` 文件的示例：
+
+```bash
+cp whisper-live.env.example whisper-live.env
+# 编辑 whisper-live.env 配置您的设置，然后：
+docker run \
+    --name whisper-live \
+    --restart=always \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -v ./whisper-live.env:/whisper-live.env:ro \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    -d hwdsl2/whisper-live-server
+```
+
+`env` 文件以绑定挂载方式传入容器，每次重启时自动生效，无需重建容器。
+
+也可通过 `--env-file` 传入：
+
+```bash
+docker run \
+    --name whisper-live \
+    --restart=always \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    --env-file=whisper-live.env \
+    -d hwdsl2/whisper-live-server
+```
+
+## 使用 docker-compose
+
+```bash
+cp whisper-live.env.example whisper-live.env
+# 按需编辑 whisper-live.env，然后：
+docker compose up -d
+docker logs whisper-live
+```
+
+示例 `docker-compose.yml`（已包含在项目中）：
+
+```yaml
+services:
+  whisper-live:
+    image: hwdsl2/whisper-live-server
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket — 如使用主机反向代理，改为 "127.0.0.1:9090:9090/tcp"
+      - "8000:8000/tcp"  # REST API  — 如使用主机反向代理，改为 "127.0.0.1:8000:8000/tcp"
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+
+volumes:
+  whisper-live-data:
+```
+
+**注：** 如需面向公网部署，强烈建议使用[反向代理](#使用反向代理)启用 HTTPS。此时请将 `docker-compose.yml` 中的端口改为其 `127.0.0.1:` 形式。
+
+## WebSocket 流式传输
+
+`9090` 端口的 WebSocket 接口支持实时音频流转录。客户端发送原始 PCM 音频块，服务器在解码时返回转录段落。
+
+### 协议
+
+连接后，首先发送 JSON 配置消息：
+
+```json
+{
+  "uid": "unique-client-id",
+  "language": "zh",
+  "model": "base",
+  "use_vad": true
+}
+```
+
+然后以二进制 WebSocket 帧形式流式传输 16 kHz 采样率的 16 位 PCM 原始音频。服务器返回 JSON 转录事件：
+
+```json
+{"uid": "unique-client-id", "segments": [{"text": "您好，最近怎么样？", "start": 0.0, "end": 2.4, "completed": true}]}
+```
+
+### Python 客户端示例
+
+```python
+from whisper_live.client import TranscriptionClient
+
+client = TranscriptionClient(
+    "您的服务器IP",
+    9090,
+    lang="zh",
+    translate=False,
+    model="base",
+    use_vad=True,
+)
+
+# 转录文件
+client("audio.mp3")
+
+# 或从麦克风转录
+# client()
+```
+
+安装客户端库：
+
+```bash
+pip install whisper-live
+```
+
+## REST API 参考
+
+`8000` 端口的 REST API 与 [OpenAI 音频转录接口](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create)完全兼容。任何已调用 `https://api.openai.com/v1/audio/transcriptions` 的应用，只需设置以下环境变量即可切换到自托管服务：
+
+```
+OPENAI_BASE_URL=http://您的服务器IP:8000
+```
+
+### 转录音频
+
+```
+POST /v1/audio/transcriptions
+Content-Type: multipart/form-data
+```
+
+**参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `file` | 文件 | ✅ | 音频文件。支持格式：`mp3`、`mp4`、`m4a`、`wav`、`webm`、`ogg`、`flac` 及 ffmpeg 支持的所有格式。 |
+| `model` | 字符串 | ✅ | 传入 `whisper-1`（值被接受，但始终使用当前活跃模型）。 |
+| `language` | 字符串 | — | BCP-47 语言代码（如 `zh`、`en`、`ja`）。如不填，则自动检测语言。 |
+
+**示例：**
+
+```bash
+curl http://您的服务器IP:8000/v1/audio/transcriptions \
+    -F file=@meeting.m4a \
+    -F model=whisper-1 \
+    -F language=zh
+```
+
+**响应：**
+```json
+{"text": "转录的文字内容显示在这里。"}
+```
+
+### 交互式 API 文档
+
+可在以下地址访问交互式 Swagger UI：
+
+```
+http://您的服务器IP:8000/docs
+```
+
+## 持久化数据
+
+所有服务器数据存储在 Docker 数据卷（容器内的 `/var/lib/whisper-live`）中：
+
+```
+/var/lib/whisper-live/
+├── models--Systran--faster-whisper-*/   # 缓存的 Whisper 模型文件（从 HuggingFace 下载）
+├── .port                 # 当前 WebSocket 端口（供 whisper_live_manage 使用）
+├── .rest_port            # 当前 REST API 端口（供 whisper_live_manage 使用）
+├── .model                # 当前模型名称（供 whisper_live_manage 使用）
+└── .server_addr          # 缓存的服务器 IP（供 whisper_live_manage 使用）
+```
+
+**提示：** `/var/lib/whisper-live` 数据卷与 `docker-whisper` 的 `/var/lib/whisper` 数据卷使用相同的 HuggingFace 缓存布局。如果已通过 `docker-whisper` 下载了模型，可绑定挂载相同的数据卷目录以避免重复下载。
+
+请备份 Docker 数据卷以保留已下载的模型。模型体积较大（145 MB – 3 GB），首次客户端连接时下载可能需要数分钟；保留数据卷可避免在重新创建容器时重复下载。
+
+## 管理服务器
+
+在运行中的容器内使用 `whisper_live_manage` 来查看和管理服务器。
+
+**显示服务器信息：**
+
+```bash
+docker exec whisper-live whisper_live_manage --showinfo
+```
+
+**列出可用模型：**
+
+```bash
+docker exec whisper-live whisper_live_manage --listmodels
+```
+
+**预先下载模型：**
+
+```bash
+docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
+```
+
+## 切换模型
+
+要更换活跃模型：
+
+1. *（可选但建议）* 在服务器运行时预先下载新模型：
+   ```bash
+   docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
+   ```
+
+2. 在 `whisper-live.env` 文件中更新 `WHISPERLIVE_MODEL`。
+
+3. 重启容器：
+   ```bash
+   docker restart whisper-live
+   ```
+
+**可用模型：**
+
+| 模型 | 磁盘占用 | 内存（约） | 说明 |
+|---|---|---|---|
+| `tiny` | ~75 MB | ~250 MB | 最快；精度较低 |
+| `tiny.en` | ~75 MB | ~250 MB | 仅英语 |
+| `base` | ~145 MB | ~500 MB | 良好平衡 — **默认** |
+| `base.en` | ~145 MB | ~500 MB | 仅英语 |
+| `small` | ~465 MB | ~1.5 GB | 更高精度 |
+| `small.en` | ~465 MB | ~1.5 GB | 仅英语 |
+| `medium` | ~1.5 GB | ~5 GB | 高精度 |
+| `medium.en` | ~1.5 GB | ~5 GB | 仅英语 |
+| `large-v1` | ~3 GB | ~10 GB | 旧版大型模型 |
+| `large-v2` | ~3 GB | ~10 GB | 非常高精度 |
+| `large-v3` | ~3 GB | ~10 GB | 最高精度 |
+| `large-v3-turbo` | ~1.6 GB | ~6 GB | 高速 + 高精度 ⭐ |
+| `turbo` | ~1.6 GB | ~6 GB | `large-v3-turbo` 的别名 |
+
+> **提示：** `large-v3-turbo` 的精度接近 `large-v3`，但资源消耗约为其一半。对于大多数生产环境，推荐从 `base` 升级到此模型。
+
+内存数据为近似值，基于 INT8 量化（默认）。模型缓存在 `/var/lib/whisper-live` Docker 数据卷中，只需下载一次。
+
+## 使用反向代理
+
+如需面向公网部署，可在服务器前置反向代理处理 HTTPS 和 WSS（安全 WebSocket）终止。
+
+可使用以下地址从反向代理访问容器：
+
+- **`whisper-live:9090`** / **`whisper-live:8000`** — 如果反向代理作为容器运行在**同一 Docker 网络**中。
+- **`127.0.0.1:9090`** / **`127.0.0.1:8000`** — 如果反向代理运行在**主机上**且端口已发布。
+
+**使用 [Caddy](https://caddyserver.com/docs/)（[Docker 镜像](https://hub.docker.com/_/caddy)）的示例**（自动 TLS，同一 Docker 网络中的 WebSocket 代理）：
+
+`Caddyfile`：
+```
+whisper-live.example.com {
+  # WebSocket 流式传输（wss://）
+  handle /ws* {
+    reverse_proxy whisper-live:9090
+  }
+  # REST API（https://）
+  reverse_proxy whisper-live:8000
+}
+```
+
+**使用 nginx 的示例**（反向代理运行在主机上）：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name whisper-live.example.com;
+
+    ssl_certificate     /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    # REST API
+    location /v1/ {
+        proxy_pass         http://127.0.0.1:8000;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_read_timeout 300s;
+    }
+
+    # WebSocket 流式传输
+    location / {
+        proxy_pass         http://127.0.0.1:9090;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection "upgrade";
+        proxy_set_header   Host $host;
+        proxy_read_timeout 600s;
+    }
+}
+```
+
+> **重要：** WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 请求头。若缺少这些配置，实时流式传输将无法通过 nginx 正常工作。
+
+## 更新 Docker 镜像
+
+如需更新 Docker 镜像和容器，首先[下载](#下载)最新版本：
+
+```bash
+docker pull hwdsl2/whisper-live-server
+```
+
+如果镜像已是最新版本，您将看到：
+
+```
+Status: Image is up to date for hwdsl2/whisper-live-server:latest
+```
+
+否则将下载最新版本。删除并重新创建容器：
+
+```bash
+docker rm -f whisper-live
+# 然后使用相同的数据卷和端口重新运行快速开始中的 docker run 命令。
+```
+
+您下载的模型将保留在 `whisper-live-data` 数据卷中。
+
+## 与其他 AI 服务配合使用
+
+[WhisperLive（实时 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh.md)、[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md) 和 [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md) 镜像可以组合使用，在您自己的服务器上搭建完整的私密 AI 系统。当使用 LiteLLM 连接外部提供商（如 OpenAI、Anthropic）时，您的数据将发送给这些提供商。
+
+```mermaid
+graph LR
+    D["📄 文档"] -->|向量化| E["Embeddings<br/>(文本 → 向量)"]
+    E -->|存储| VDB["向量数据库<br/>(Qdrant, Chroma)"]
+    A["🎤 实时音频"] -->|流式传输| WL["WhisperLive<br/>(实时 STT)"]
+    WL -->|查询| E
+    VDB -->|上下文| L["LiteLLM<br/>(AI 网关)"]
+    WL -->|文本| L
+    L -->|回复| T["Kokoro TTS<br/>(文字转语音)"]
+    T --> B["🔊 音频输出"]
+```
+
+| 服务 | 功能 | 默认端口 |
+|---|---|---|
+| **[WhisperLive（实时 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh.md)** | 实时 WebSocket 流式转录 | `9090`（WS）、`8000`（REST） |
+| **[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)** | 通过 REST API 转录完整音频文件 | `9000` |
+| **[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)** | 将文本转换为向量，用于语义搜索和 RAG | `8000` |
+| **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)** | AI 网关——将请求路由至 OpenAI、Anthropic、Ollama 及 100+ 其他提供商 | `4000` |
+| **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)** | 将文本转换为自然语音 | `8880` |
+
+### RAG 管道示例
+
+使用语义搜索嵌入文档，检索上下文后通过 LLM 回答问题：
+
+```bash
+# 第一步：将文档块向量化并存入向量数据库
+curl -s http://localhost:8000/v1/embeddings \
+    -H "Content-Type: application/json" \
+    -d '{"input": "Docker 通过将应用打包到容器中来简化部署。", "model": "text-embedding-ada-002"}' \
+    | jq '.data[0].embedding'
+# → 将返回的向量与原文本一起存入 Qdrant、Chroma、pgvector 等。
+
+# 第二步：查询时对问题向量化，从向量数据库检索最相关的文档块，
+#          然后将问题和检索到的上下文发送给 LiteLLM。
+curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "gpt-4o",
+      "messages": [
+        {"role": "system", "content": "仅使用提供的上下文回答问题。"},
+        {"role": "user", "content": "Docker 有什么作用？\n\n上下文：Docker 通过将应用打包到容器中来简化部署。"}
+      ]
+    }' \
+    | jq -r '.choices[0].message.content'
+```
+
+### 实时语音管道示例
+
+实时转录语音并转发给 LLM：
+
+```bash
+# 安装客户端库
+pip install whisper-live openai
+
+# 从麦克风流式传输，打印每个转录段落，发送给 LLM
+python3 - <<'EOF'
+from whisper_live.client import TranscriptionClient
+from openai import OpenAI
+
+llm = OpenAI(base_url="http://localhost:4000", api_key="your-litellm-key")
+
+def on_segment(segments):
+    for seg in segments:
+        if seg.get("completed"):
+            text = seg["text"].strip()
+            print(f"转录：{text}")
+            resp = llm.chat.completions.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": text}],
+            )
+            print(f"LLM：{resp.choices[0].message.content}")
+
+client = TranscriptionClient("localhost", 9090, lang="zh", model="base", use_vad=True)
+client()
+EOF
+```
+
+## 技术细节
+
+- 基础镜像：`python:3.12-slim`（Debian）
+- 运行时：Python 3（虚拟环境位于 `/opt/venv`）
+- STT 引擎：[WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + CTranslate2（默认 INT8）
+- VAD：通过 PyTorch（CPU）使用 [Silero VAD](https://github.com/snakers4/silero-vad)
+- WebSocket 服务器：Python `websockets` 库
+- REST API 框架：[FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
+- 数据目录：`/var/lib/whisper-live`（Docker 数据卷）
+- 模型存储：HuggingFace Hub 格式，存储在数据卷中——下载一次，重启后复用
+
+## 授权协议
+
+**注：** 预构建镜像中包含的软件组件（如 WhisperLive、faster-whisper、PyTorch 及其依赖项）均受各自版权持有者所选许可证约束。使用预构建镜像时，用户有责任确保其使用方式符合镜像内所有软件的相关许可证要求。
+
+版权所有 (C) 2026 Lin Song   
+本作品采用 [MIT 许可证](https://opensource.org/licenses/MIT)授权。
+
+**WhisperLive** 版权归 Vineet Suryan、Collabora Ltd. 所有，依据 [MIT 许可证](https://github.com/collabora/WhisperLive/blob/main/LICENSE)分发。
+
+**faster-whisper** 版权归 SYSTRAN 所有，依据 [MIT 许可证](https://github.com/SYSTRAN/faster-whisper/blob/master/LICENSE)分发。
+
+本项目是独立的 Docker 封装，与 OpenAI、Collabora 或 SYSTRAN 无关联，未获其背书或赞助。
