@@ -148,7 +148,7 @@ if [ -n "$WHISPERLIVE_LOCAL_ONLY" ]; then
 fi
 
 # Persist config values so whisper_live_manage can read them without the env file
-printf '%s' "$WHISPERLIVE_PORT"      > /var/lib/whisper-live/.port
+printf '%s' "$WHISPERLIVE_PORT"      > /var/lib/whisper-live/.ws_port
 printf '%s' "$WHISPERLIVE_REST_PORT" > /var/lib/whisper-live/.rest_port
 printf '%s' "$WHISPERLIVE_MODEL"     > /var/lib/whisper-live/.model
 printf '%s' "$server_addr"           > /var/lib/whisper-live/.server_addr

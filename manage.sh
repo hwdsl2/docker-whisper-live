@@ -10,7 +10,7 @@
 export PATH="/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 WHISPERLIVE_DATA="/var/lib/whisper-live"
-PORT_FILE="${WHISPERLIVE_DATA}/.port"
+PORT_FILE="${WHISPERLIVE_DATA}/.ws_port"
 REST_PORT_FILE="${WHISPERLIVE_DATA}/.rest_port"
 MODEL_FILE="${WHISPERLIVE_DATA}/.model"
 SERVER_ADDR_FILE="${WHISPERLIVE_DATA}/.server_addr"
