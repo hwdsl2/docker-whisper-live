@@ -4,7 +4,7 @@
 
 [![Build Status](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) real-time speech-to-text server, powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Provides **WebSocket streaming** for live audio transcription and an **OpenAI-compatible REST API** for file transcription. Based on Debian (python:3.12-slim). Designed to be simple, private, and self-hosted.
+Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) real-time speech-to-text server, powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Provides WebSocket streaming for live audio transcription and an OpenAI-compatible REST API for file transcription. Based on Debian (python:3.12-slim). Designed to be simple, private, and self-hosted.
 
 **Features:**
 
@@ -24,7 +24,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - AI/Audio: [Whisper (batch STT)](https://github.com/hwdsl2/docker-whisper), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm)
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server), [Headscale](https://github.com/hwdsl2/docker-headscale)
 
-**Tip:** WhisperLive, Whisper, Kokoro, Embeddings, and LiteLLM can be [used together](#using-with-other-ai-services) to build a complete, private AI stack on your own server.
+**Tip:** WhisperLive, Kokoro, Embeddings, and LiteLLM can be [used together](#using-with-other-ai-services) to build a complete, private AI stack on your own server.
 
 ## When to use WhisperLive vs. Whisper
 
@@ -34,7 +34,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 | **Protocol** | HTTP REST | WebSocket (streaming) + HTTP REST |
 | **Latency** | Full file, then response | Near-real-time, word by word |
 | **Best for** | Meeting recordings, uploaded audio | Browser capture, RTSP streams, live captions |
-| **Image size** | ~180 MB | ~800 MB (includes PyTorch for VAD) |
+| **Image size** | ~180 MB | ~730 MB (includes PyTorch for VAD) |
 
 ## Quick start
 
@@ -49,6 +49,8 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+**Important:** This image requires at least 700 MB of available RAM for the default `base` model. Systems with 512 MB or less of RAM are not supported.
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted ports.
 
@@ -83,7 +85,7 @@ curl http://your_server_ip:8000/v1/audio/transcriptions \
 
 - A Linux server (local or cloud) with Docker installed
 - Supported architectures: `amd64` (x86_64), `arm64` (e.g. Raspberry Pi 4/5, AWS Graviton)
-- Minimum RAM: ~1.5 GB free (PyTorch + base model). The image itself is ~2 GB compressed.
+- Minimum RAM: ~700 MB free for the default `base` model (see [model table](#switching-models))
 - Internet access for the initial model download (the model is cached locally afterwards). Not required if using `WHISPERLIVE_LOCAL_ONLY=true` with pre-cached models.
 - **CPU-only image:** This image runs on CPU only. The `tiny` and `base` models work well for real-time WebSocket streaming on CPU. The `small` and larger models are slower on CPU and may not keep up with live audio in real time — use them only if transcription accuracy is more important than real-time latency.
 
@@ -315,7 +317,7 @@ All server data is stored in the Docker volume (`/var/lib/whisper-live` inside t
 ```
 /var/lib/whisper-live/
 ├── models--Systran--faster-whisper-*/   # Cached Whisper model files (downloaded from HuggingFace)
-├── .port                 # Active WebSocket port (used by whisper_live_manage)
+├── .ws_port              # Active WebSocket port (used by whisper_live_manage)
 ├── .rest_port            # Active REST API port (used by whisper_live_manage)
 ├── .model                # Active model name (used by whisper_live_manage)
 └── .server_addr          # Cached server IP (used by whisper_live_manage)
@@ -369,8 +371,8 @@ To change the active model:
 |---|---|---|---|
 | `tiny` | ~75 MB | ~250 MB | Fastest; lower accuracy |
 | `tiny.en` | ~75 MB | ~250 MB | English-only |
-| `base` | ~145 MB | ~500 MB | Good balance — **default** |
-| `base.en` | ~145 MB | ~500 MB | English-only |
+| `base` | ~145 MB | ~700 MB | Good balance — **default** |
+| `base.en` | ~145 MB | ~700 MB | English-only |
 | `small` | ~465 MB | ~1.5 GB | Better accuracy |
 | `small.en` | ~465 MB | ~1.5 GB | English-only |
 | `medium` | ~1.5 GB | ~5 GB | High accuracy |
@@ -467,7 +469,7 @@ Your downloaded models are preserved in the `whisper-live-data` volume.
 
 ## Using with other AI services
 
-The [WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live), [Whisper (batch STT)](https://github.com/hwdsl2/docker-whisper), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), and [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro) images can be combined to build a complete, private AI stack on your own server — from live voice I/O to RAG-powered question answering. All these services run fully locally. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
+The [WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), and [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro) images can be combined to build a complete, private AI stack on your own server — from live voice I/O to RAG-powered question answering. All these services run fully locally. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
 
 ```mermaid
 graph LR
@@ -484,37 +486,9 @@ graph LR
 | Service | Role | Default port |
 |---|---|---|
 | **[WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live)** | Real-time WebSocket streaming transcription for live audio | `9090` (WS), `8000` (REST) |
-| **[Whisper (batch STT)](https://github.com/hwdsl2/docker-whisper)** | Transcribes complete audio files via REST API | `9000` |
 | **[Embeddings](https://github.com/hwdsl2/docker-embeddings)** | Converts text to vectors for semantic search and RAG | `8000` |
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm)** | AI gateway — routes requests to OpenAI, Anthropic, Ollama, and 100+ other providers | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro)** | Converts text to natural-sounding speech | `8880` |
-
-### RAG pipeline example
-
-Embed documents for semantic search, then retrieve context and answer questions with an LLM:
-
-```bash
-# Step 1: Embed a document chunk and store the vector in your vector DB
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker simplifies deployment by packaging apps in containers.", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → Store the returned vector alongside the source text in Qdrant, Chroma, pgvector, etc.
-
-# Step 2: At query time, embed the question, retrieve the top matching chunks from
-#          the vector DB, then send the question and retrieved context to LiteLLM.
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "Answer using only the provided context."},
-        {"role": "user", "content": "What does Docker do?\n\nContext: Docker simplifies deployment by packaging apps in containers."}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
 
 ### Live voice pipeline example
 
@@ -545,6 +519,33 @@ def on_segment(segments):
 client = TranscriptionClient("localhost", 9090, lang="en", model="base", use_vad=True)
 client()
 EOF
+```
+
+### RAG pipeline example
+
+Embed documents for semantic search, then retrieve context and answer questions with an LLM:
+
+```bash
+# Step 1: Embed a document chunk and store the vector in your vector DB
+curl -s http://localhost:8000/v1/embeddings \
+    -H "Content-Type: application/json" \
+    -d '{"input": "Docker simplifies deployment by packaging apps in containers.", "model": "text-embedding-ada-002"}' \
+    | jq '.data[0].embedding'
+# → Store the returned vector alongside the source text in Qdrant, Chroma, pgvector, etc.
+
+# Step 2: At query time, embed the question, retrieve the top matching chunks from
+#          the vector DB, then send the question and retrieved context to LiteLLM.
+curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "gpt-4o",
+      "messages": [
+        {"role": "system", "content": "Answer using only the provided context."},
+        {"role": "user", "content": "What does Docker do?\n\nContext: Docker simplifies deployment by packaging apps in containers."}
+      ]
+    }' \
+    | jq -r '.choices[0].message.content'
 ```
 
 ## Technical details

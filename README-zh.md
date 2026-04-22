@@ -4,7 +4,7 @@
 
 [![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 **WebSocket 流式传输**，以及用于文件转录的 **OpenAI 兼容 REST API**。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
+使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 WebSocket 流式传输，以及用于文件转录的 OpenAI 兼容 REST API。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
 
 **功能特性：**
 
@@ -24,7 +24,7 @@
 - AI/音频：[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)
 
-**提示：** WhisperLive、Whisper、Kokoro、Embeddings 和 LiteLLM 可以[配合使用](#与其他-ai-服务配合使用)，在您自己的服务器上搭建完整的私密 AI 系统。
+**提示：** WhisperLive、Kokoro、Embeddings 和 LiteLLM 可以[配合使用](#与其他-ai-服务配合使用)，在您自己的服务器上搭建完整的私密 AI 系统。
 
 ## WhisperLive 与 Whisper 的选择
 
@@ -34,7 +34,7 @@
 | **协议** | HTTP REST | WebSocket（流式）+ HTTP REST |
 | **延迟** | 完整文件处理后返回结果 | 近实时，逐词输出 |
 | **适合** | 会议录音、上传的音频文件 | 浏览器采集、RTSP 流、实时字幕 |
-| **镜像大小** | ~180 MB | ~800 MB（包含用于 VAD 的 PyTorch） |
+| **镜像大小** | ~180 MB | ~730 MB（包含用于 VAD 的 PyTorch） |
 
 ## 快速开始
 
@@ -49,6 +49,8 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+**重要：** 此镜像运行默认 `base` 模型需要至少 700 MB 可用内存。内存为 512 MB 或更少的系统不受支持。
 
 **注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。
 
@@ -83,7 +85,7 @@ curl http://您的服务器IP:8000/v1/audio/transcriptions \
 
 - 已安装 Docker 的 Linux 服务器（本地或云端）
 - 支持的架构：`amd64`（x86_64）、`arm64`（例如 Raspberry Pi 4/5、AWS Graviton）
-- 最低内存：约需 1.5 GB 可用内存（PyTorch + base 模型）。镜像本身约 2 GB（压缩后）。
+- 最低内存：默认 `base` 模型约需 700 MB 可用内存（请参阅[模型列表](#切换模型)）
 - 首次启动需要访问互联网以下载模型（之后模型将缓存在本地）。使用预先缓存的模型并设置 `WHISPERLIVE_LOCAL_ONLY=true` 时不需要网络访问。
 - **仅 CPU 镜像：** 本镜像仅支持 CPU 运行。`tiny` 和 `base` 模型在 CPU 上可满足实时 WebSocket 流式传输的需求。`small` 及更大的模型在 CPU 上速度较慢，可能无法实时跟上音频流——仅在转录精度比实时延迟更重要时使用这些模型。
 
@@ -237,6 +239,32 @@ client("audio.mp3")
 pip install whisper-live
 ```
 
+### 浏览器客户端示例
+
+```javascript
+const ws = new WebSocket("ws://您的服务器IP:9090");
+
+ws.onopen = () => {
+  // 发送配置信息
+  ws.send(JSON.stringify({
+    uid: "browser-client-1",
+    language: "zh",
+    model: "base",
+    use_vad: true,
+  }));
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.segments) {
+    data.segments.forEach(seg => console.log(seg.text));
+  }
+};
+
+// 以 ArrayBuffer 形式发送音频块（16 位 PCM，16 kHz）
+// ws.send(audioBuffer);
+```
+
 ## REST API 参考
 
 `8000` 端口的 REST API 与 [OpenAI 音频转录接口](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create)完全兼容。任何已调用 `https://api.openai.com/v1/audio/transcriptions` 的应用，只需设置以下环境变量即可切换到自托管服务：
@@ -289,7 +317,7 @@ http://您的服务器IP:8000/docs
 ```
 /var/lib/whisper-live/
 ├── models--Systran--faster-whisper-*/   # 缓存的 Whisper 模型文件（从 HuggingFace 下载）
-├── .port                 # 当前 WebSocket 端口（供 whisper_live_manage 使用）
+├── .ws_port              # 当前 WebSocket 端口（供 whisper_live_manage 使用）
 ├── .rest_port            # 当前 REST API 端口（供 whisper_live_manage 使用）
 ├── .model                # 当前模型名称（供 whisper_live_manage 使用）
 └── .server_addr          # 缓存的服务器 IP（供 whisper_live_manage 使用）
@@ -343,8 +371,8 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
 |---|---|---|---|
 | `tiny` | ~75 MB | ~250 MB | 最快；精度较低 |
 | `tiny.en` | ~75 MB | ~250 MB | 仅英语 |
-| `base` | ~145 MB | ~500 MB | 良好平衡 — **默认** |
-| `base.en` | ~145 MB | ~500 MB | 仅英语 |
+| `base` | ~145 MB | ~700 MB | 良好平衡 — **默认** |
+| `base.en` | ~145 MB | ~700 MB | 仅英语 |
 | `small` | ~465 MB | ~1.5 GB | 更高精度 |
 | `small.en` | ~465 MB | ~1.5 GB | 仅英语 |
 | `medium` | ~1.5 GB | ~5 GB | 高精度 |
@@ -439,7 +467,7 @@ docker rm -f whisper-live
 
 ## 与其他 AI 服务配合使用
 
-[WhisperLive（实时 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh.md)、[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md) 和 [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md) 镜像可以组合使用，在您自己的服务器上搭建完整的私密 AI 系统。当使用 LiteLLM 连接外部提供商（如 OpenAI、Anthropic）时，您的数据将发送给这些提供商。
+[WhisperLive（实时 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md) 和 [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md) 镜像可以组合使用，在您自己的服务器上搭建完整的私密 AI 系统。当使用 LiteLLM 连接外部提供商（如 OpenAI、Anthropic）时，您的数据将发送给这些提供商。
 
 ```mermaid
 graph LR
@@ -456,37 +484,9 @@ graph LR
 | 服务 | 功能 | 默认端口 |
 |---|---|---|
 | **[WhisperLive（实时 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh.md)** | 实时 WebSocket 流式转录 | `9090`（WS）、`8000`（REST） |
-| **[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)** | 通过 REST API 转录完整音频文件 | `9000` |
 | **[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)** | 将文本转换为向量，用于语义搜索和 RAG | `8000` |
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)** | AI 网关——将请求路由至 OpenAI、Anthropic、Ollama 及 100+ 其他提供商 | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)** | 将文本转换为自然语音 | `8880` |
-
-### RAG 管道示例
-
-使用语义搜索嵌入文档，检索上下文后通过 LLM 回答问题：
-
-```bash
-# 第一步：将文档块向量化并存入向量数据库
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker 通过将应用打包到容器中来简化部署。", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → 将返回的向量与原文本一起存入 Qdrant、Chroma、pgvector 等。
-
-# 第二步：查询时对问题向量化，从向量数据库检索最相关的文档块，
-#          然后将问题和检索到的上下文发送给 LiteLLM。
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "仅使用提供的上下文回答问题。"},
-        {"role": "user", "content": "Docker 有什么作用？\n\n上下文：Docker 通过将应用打包到容器中来简化部署。"}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
 
 ### 实时语音管道示例
 
@@ -517,6 +517,33 @@ def on_segment(segments):
 client = TranscriptionClient("localhost", 9090, lang="zh", model="base", use_vad=True)
 client()
 EOF
+```
+
+### RAG 管道示例
+
+使用语义搜索嵌入文档，检索上下文后通过 LLM 回答问题：
+
+```bash
+# 第一步：将文档块向量化并存入向量数据库
+curl -s http://localhost:8000/v1/embeddings \
+    -H "Content-Type: application/json" \
+    -d '{"input": "Docker 通过将应用打包到容器中来简化部署。", "model": "text-embedding-ada-002"}' \
+    | jq '.data[0].embedding'
+# → 将返回的向量与原文本一起存入 Qdrant、Chroma、pgvector 等。
+
+# 第二步：查询时对问题向量化，从向量数据库检索最相关的文档块，
+#          然后将问题和检索到的上下文发送给 LiteLLM。
+curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "gpt-4o",
+      "messages": [
+        {"role": "system", "content": "仅使用提供的上下文回答问题。"},
+        {"role": "user", "content": "Docker 有什么作用？\n\n上下文：Docker 通过将应用打包到容器中来简化部署。"}
+      ]
+    }' \
+    | jq -r '.choices[0].message.content'
 ```
 
 ## 技术细节

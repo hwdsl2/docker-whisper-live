@@ -4,7 +4,7 @@
 
 [![建置狀態](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中執行 [WhisperLive](https://github.com/collabora/WhisperLive) 即時語音轉文字伺服器。提供用於即時音訊轉錄的 **WebSocket 串流**，以及用於檔案轉錄的 **OpenAI 相容 REST API**。基於 Debian (python:3.12-slim)，簡單、私密、可自架。
+使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中執行 [WhisperLive](https://github.com/collabora/WhisperLive) 即時語音轉文字伺服器。提供用於即時音訊轉錄的 WebSocket 串流，以及用於檔案轉錄的 OpenAI 相容 REST API。基於 Debian (python:3.12-slim)，簡單、私密、可自架。
 
 **功能特色：**
 
@@ -24,7 +24,7 @@
 - AI/音訊：[Whisper（批次 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md)
 
-**提示：** WhisperLive、Whisper、Kokoro、Embeddings 和 LiteLLM 可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的私密 AI 系統。
+**提示：** WhisperLive、Kokoro、Embeddings 和 LiteLLM 可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的私密 AI 系統。
 
 ## WhisperLive 與 Whisper 的選擇
 
@@ -34,7 +34,7 @@
 | **協定** | HTTP REST | WebSocket（串流）+ HTTP REST |
 | **延遲** | 完整檔案處理後回傳結果 | 近即時，逐字輸出 |
 | **適合** | 會議錄音、上傳的音訊檔案 | 瀏覽器擷取、RTSP 串流、即時字幕 |
-| **映像大小** | ~180 MB | ~800 MB（包含用於 VAD 的 PyTorch） |
+| **映像大小** | ~180 MB | ~730 MB（包含用於 VAD 的 PyTorch） |
 
 ## 快速開始
 
@@ -49,6 +49,8 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+**重要：** 此映像執行預設 `base` 模型需要至少 700 MB 可用記憶體。記憶體為 512 MB 或更少的系統不受支援。
 
 **注意：** 如需面向網際網路的部署，**強烈建議**使用[反向代理](#使用反向代理)來新增 HTTPS。此時，還應將上述 `docker run` 指令中的 `-p 9090:9090 -p 8000:8000` 替換為 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止從外部直接存取未加密的連接埠。
 
@@ -83,7 +85,7 @@ curl http://您的伺服器IP:8000/v1/audio/transcriptions \
 
 - 已安裝 Docker 的 Linux 伺服器（本地或雲端）
 - 支援的架構：`amd64`（x86_64）、`arm64`（例如 Raspberry Pi 4/5、AWS Graviton）
-- 最低記憶體：約需 1.5 GB 可用記憶體（PyTorch + base 模型）。映像本身約 2 GB（壓縮後）。
+- 最低記憶體：預設 `base` 模型約需 700 MB 可用記憶體（請參閱[模型清單](#切換模型)）
 - 首次啟動需要存取網際網路以下載模型（之後模型將快取在本地）。使用預先快取的模型並設定 `WHISPERLIVE_LOCAL_ONLY=true` 時不需要網路存取。
 - **僅 CPU 映像：** 本映像僅支援 CPU 執行。`tiny` 和 `base` 模型在 CPU 上可滿足即時 WebSocket 串流的需求。`small` 及更大的模型在 CPU 上速度較慢，可能無法即時跟上音訊串流——僅在轉錄精確度比即時延遲更重要時使用這些模型。
 
@@ -157,6 +159,8 @@ docker logs whisper-live
 
 `9090` 連接埠的 WebSocket 端點支援即時音訊串流轉錄。用戶端傳送原始 PCM 音訊區塊，伺服器在解碼時回傳轉錄段落。
 
+### 協議
+
 連線後，首先傳送 JSON 設定訊息：
 
 ```json
@@ -201,9 +205,56 @@ client("audio.mp3")
 pip install whisper-live
 ```
 
+### 瀏覽器用戶端範例
+
+```javascript
+const ws = new WebSocket("ws://您的伺服器IP:9090");
+
+ws.onopen = () => {
+  // 傳送設定資訊
+  ws.send(JSON.stringify({
+    uid: "browser-client-1",
+    language: "zh",
+    model: "base",
+    use_vad: true,
+  }));
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.segments) {
+    data.segments.forEach(seg => console.log(seg.text));
+  }
+};
+
+// 以 ArrayBuffer 形式傳送音訊區塊（16 位元 PCM，16 kHz）
+// ws.send(audioBuffer);
+```
+
 ## REST API 參考
 
-`8000` 連接埠的 REST API 與 [OpenAI 音訊轉錄端點](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create)完全相容。
+`8000` 連接埠的 REST API 與 [OpenAI 音訊轉錄端點](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create)完全相容。任何已呼叫 `https://api.openai.com/v1/audio/transcriptions` 的應用程式，只需設定以下環境變數即可切換到自架伺服器：
+
+```
+OPENAI_BASE_URL=http://您的伺服器IP:8000
+```
+
+### 轉錄音訊
+
+```
+POST /v1/audio/transcriptions
+Content-Type: multipart/form-data
+```
+
+**參數：**
+
+| 參數 | 類型 | 必填 | 說明 |
+|---|---|---|---|
+| `file` | 檔案 | ✅ | 音訊檔案。支援格式：`mp3`、`mp4`、`m4a`、`wav`、`webm`、`ogg`、`flac` 及 ffmpeg 支援的所有格式。 |
+| `model` | 字串 | ✅ | 傳入 `whisper-1`（值被接受，但始終使用當前活躍模型）。 |
+| `language` | 字串 | — | BCP-47 語言代碼（如 `zh`、`en`、`ja`）。如不填，則自動偵測語言。 |
+
+**範例：**
 
 ```bash
 curl http://您的伺服器IP:8000/v1/audio/transcriptions \
@@ -211,6 +262,13 @@ curl http://您的伺服器IP:8000/v1/audio/transcriptions \
     -F model=whisper-1 \
     -F language=zh
 ```
+
+**回應：**
+```json
+{"text": "轉錄的文字內容顯示在這裡。"}
+```
+
+### 互動式 API 文件
 
 互動式 Swagger UI 可在以下位址存取：
 
@@ -225,7 +283,7 @@ http://您的伺服器IP:8000/docs
 ```
 /var/lib/whisper-live/
 ├── models--Systran--faster-whisper-*/   # 快取的 Whisper 模型檔案（從 HuggingFace 下載）
-├── .port                 # 當前 WebSocket 連接埠（供 whisper_live_manage 使用）
+├── .ws_port              # 當前 WebSocket 連接埠（供 whisper_live_manage 使用）
 ├── .rest_port            # 當前 REST API 連接埠（供 whisper_live_manage 使用）
 ├── .model                # 當前模型名稱（供 whisper_live_manage 使用）
 └── .server_addr          # 快取的伺服器 IP（供 whisper_live_manage 使用）
@@ -256,6 +314,28 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
    ```bash
    docker restart whisper-live
    ```
+
+**可用模型：**
+
+| 模型 | 磁碟占用 | 記憶體（約） | 說明 |
+|---|---|---|---|
+| `tiny` | ~75 MB | ~250 MB | 最快；精確度較低 |
+| `tiny.en` | ~75 MB | ~250 MB | 僅英語 |
+| `base` | ~145 MB | ~700 MB | 良好平衡 — **預設** |
+| `base.en` | ~145 MB | ~700 MB | 僅英語 |
+| `small` | ~465 MB | ~1.5 GB | 更高精確度 |
+| `small.en` | ~465 MB | ~1.5 GB | 僅英語 |
+| `medium` | ~1.5 GB | ~5 GB | 高精確度 |
+| `medium.en` | ~1.5 GB | ~5 GB | 僅英語 |
+| `large-v1` | ~3 GB | ~10 GB | 舊版大型模型 |
+| `large-v2` | ~3 GB | ~10 GB | 非常高精確度 |
+| `large-v3` | ~3 GB | ~10 GB | 最高精確度 |
+| `large-v3-turbo` | ~1.6 GB | ~6 GB | 高速 + 高精確度 ⭐ |
+| `turbo` | ~1.6 GB | ~6 GB | `large-v3-turbo` 的別名 |
+
+> **提示：** `large-v3-turbo` 的精確度接近 `large-v3`，但資源消耗約為其一半。對於大多數正式部署，推薦從 `base` 升級到此模型。
+
+記憶體數值為近似值，基於 INT8 量化（預設）。模型快取於 `/var/lib/whisper-live` Docker 資料卷中，僅需下載一次。
 
 ## 使用反向代理
 
@@ -321,7 +401,7 @@ docker rm -f whisper-live
 
 ## 與其他 AI 服務搭配使用
 
-[WhisperLive（即時 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh-Hant.md)、[Whisper（批次 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md) 和 [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md) 映像可以組合使用，在您自己的伺服器上建立完整的私密 AI 系統。當使用 LiteLLM 連接外部提供商（如 OpenAI、Anthropic）時，您的資料將傳送給這些提供商。
+[WhisperLive（即時 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md) 和 [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md) 映像可以組合使用，在您自己的伺服器上建立完整的私密 AI 系統。當使用 LiteLLM 連接外部提供商（如 OpenAI、Anthropic）時，您的資料將傳送給這些提供商。
 
 ```mermaid
 graph LR
@@ -338,37 +418,9 @@ graph LR
 | 服務 | 功能 | 預設連接埠 |
 |---|---|---|
 | **[WhisperLive（即時 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh-Hant.md)** | 即時 WebSocket 串流轉錄 | `9090`（WS）、`8000`（REST） |
-| **[Whisper（批次 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)** | 透過 REST API 轉錄完整音訊檔案 | `9000` |
 | **[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)** | 將文字轉換為向量，用於語意搜尋和 RAG | `8000` |
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)** | AI 閘道——將請求路由至 OpenAI、Anthropic、Ollama 及 100+ 其他提供商 | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)** | 將文字轉換為自然語音 | `8880` |
-
-### RAG 管道範例
-
-使用語意搜尋嵌入文件，檢索上下文後透過 LLM 回答問題：
-
-```bash
-# 第一步：將文件區塊向量化並存入向量資料庫
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker 透過將應用程式封裝到容器中來簡化部署。", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → 將回傳的向量與原始文字一起存入 Qdrant、Chroma、pgvector 等。
-
-# 第二步：查詢時對問題向量化，從向量資料庫檢索最相關的文件區塊，
-#          然後將問題和檢索到的上下文傳送給 LiteLLM。
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "僅使用提供的上下文回答問題。"},
-        {"role": "user", "content": "Docker 有什麼作用？\n\n上下文：Docker 透過將應用程式封裝到容器中來簡化部署。"}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
 
 ### 即時語音管道範例
 
@@ -399,6 +451,33 @@ def on_segment(segments):
 client = TranscriptionClient("localhost", 9090, lang="zh", model="base", use_vad=True)
 client()
 EOF
+```
+
+### RAG 管道範例
+
+使用語意搜尋嵌入文件，檢索上下文後透過 LLM 回答問題：
+
+```bash
+# 第一步：將文件區塊向量化並存入向量資料庫
+curl -s http://localhost:8000/v1/embeddings \
+    -H "Content-Type: application/json" \
+    -d '{"input": "Docker 透過將應用程式封裝到容器中來簡化部署。", "model": "text-embedding-ada-002"}' \
+    | jq '.data[0].embedding'
+# → 將回傳的向量與原始文字一起存入 Qdrant、Chroma、pgvector 等。
+
+# 第二步：查詢時對問題向量化，從向量資料庫檢索最相關的文件區塊，
+#          然後將問題和檢索到的上下文傳送給 LiteLLM。
+curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "gpt-4o",
+      "messages": [
+        {"role": "system", "content": "僅使用提供的上下文回答問題。"},
+        {"role": "user", "content": "Docker 有什麼作用？\n\n上下文：Docker 透過將應用程式封裝到容器中來簡化部署。"}
+      ]
+    }' \
+    | jq -r '.choices[0].message.content'
 ```
 
 ## 技術細節

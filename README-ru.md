@@ -4,7 +4,7 @@
 
 [![Статус сборки](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-Docker-образ для запуска сервера [WhisperLive](https://github.com/collabora/WhisperLive) с транскрибированием речи в реальном времени на базе [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Предоставляет **потоковую передачу через WebSocket** для распознавания живого аудио и **совместимый с OpenAI REST API** для транскрибирования файлов. Основан на Debian (python:3.12-slim). Простой, приватный, для самостоятельного развёртывания.
+Docker-образ для запуска сервера [WhisperLive](https://github.com/collabora/WhisperLive) с транскрибированием речи в реальном времени на базе [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Предоставляет потоковую передачу через WebSocket для распознавания живого аудио и совместимый с OpenAI REST API для транскрибирования файлов. Основан на Debian (python:3.12-slim). Простой, приватный, для самостоятельного развёртывания.
 
 **Возможности:**
 
@@ -24,7 +24,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - ИИ/Аудио: [Whisper (пакетный STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md), [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md), [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
 
-**Подсказка:** WhisperLive, Whisper, Kokoro, Embeddings и LiteLLM можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного приватного AI-стека на собственном сервере.
+**Подсказка:** WhisperLive, Kokoro, Embeddings и LiteLLM можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного приватного AI-стека на собственном сервере.
 
 ## WhisperLive или Whisper?
 
@@ -34,7 +34,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 | **Протокол** | HTTP REST | WebSocket (потоковый) + HTTP REST |
 | **Задержка** | Ответ после обработки всего файла | Почти мгновенно, слово за словом |
 | **Подходит для** | Записи совещаний, загруженные аудиофайлы | Захват в браузере, RTSP-потоки, живые субтитры |
-| **Размер образа** | ~180 МБ | ~800 МБ (включает PyTorch для VAD) |
+| **Размер образа** | ~180 МБ | ~730 МБ (включает PyTorch для VAD) |
 
 ## Быстрый старт
 
@@ -49,6 +49,8 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+**Важно:** Для работы образа с моделью `base` по умолчанию требуется не менее 700 МБ свободной оперативной памяти. Системы с 512 МБ ОЗУ и менее не поддерживаются.
 
 **Примечание:** Для развёртывания с доступом из интернета **настоятельно рекомендуется** использовать [обратный прокси](#использование-обратного-прокси) для добавления HTTPS. В этом случае также замените `-p 9090:9090 -p 8000:8000` на `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`.
 
@@ -83,7 +85,7 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
 
 - Сервер Linux (локальный или облачный) с установленным Docker
 - Поддерживаемые архитектуры: `amd64` (x86_64), `arm64` (например, Raspberry Pi 4/5, AWS Graviton)
-- Минимум ОЗУ: ~1,5 ГБ свободной памяти (PyTorch + модель base). Сам образ ~2 ГБ (сжатый).
+- Минимум ОЗУ: ~700 МБ свободной памяти для модели `base` по умолчанию (см. [таблицу моделей](#смена-модели))
 - Доступ к интернету для первоначальной загрузки модели (после чего она кэшируется локально). Не требуется при использовании `WHISPERLIVE_LOCAL_ONLY=true` с предварительно загруженными моделями.
 - **Только CPU:** Этот образ работает исключительно на CPU. Модели `tiny` и `base` хорошо справляются с потоковой передачей через WebSocket в реальном времени на CPU. Модели `small` и крупнее работают медленнее на CPU и могут не успевать за живым аудиопотоком — используйте их только если точность транскрибирования важнее задержки в реальном времени.
 
@@ -148,6 +150,8 @@ docker logs whisper-live
 
 WebSocket-эндпоинт на порту `9090` поддерживает транскрибирование живых аудиопотоков.
 
+### Протокол
+
 При подключении сначала отправьте JSON-конфигурацию:
 
 ```json
@@ -192,9 +196,56 @@ client("audio.mp3")
 pip install whisper-live
 ```
 
+### Пример браузерного клиента
+
+```javascript
+const ws = new WebSocket("ws://ip_вашего_сервера:9090");
+
+ws.onopen = () => {
+  // Отправляем конфигурацию
+  ws.send(JSON.stringify({
+    uid: "browser-client-1",
+    language: "ru",
+    model: "base",
+    use_vad: true,
+  }));
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.segments) {
+    data.segments.forEach(seg => console.log(seg.text));
+  }
+};
+
+// Отправляем аудиофрагменты как ArrayBuffer (16-бит PCM, 16 кГц)
+// ws.send(audioBuffer);
+```
+
 ## REST API
 
-REST API на порту `8000` полностью совместим с [эндпоинтом OpenAI для транскрибирования аудио](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create).
+REST API на порту `8000` полностью совместим с [эндпоинтом OpenAI для транскрибирования аудио](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Любое приложение, уже вызывающее `https://api.openai.com/v1/audio/transcriptions`, может переключиться на самостоятельно размещённый сервер, установив:
+
+```
+OPENAI_BASE_URL=http://ip_вашего_сервера:8000
+```
+
+### Транскрибирование аудио
+
+```
+POST /v1/audio/transcriptions
+Content-Type: multipart/form-data
+```
+
+**Параметры:**
+
+| Параметр | Тип | Обязательно | Описание |
+|---|---|---|---|
+| `file` | файл | ✅ | Аудиофайл. Поддерживаемые форматы: `mp3`, `mp4`, `m4a`, `wav`, `webm`, `ogg`, `flac` и все форматы, поддерживаемые ffmpeg. |
+| `model` | строка | ✅ | Передайте `whisper-1` (значение принимается, но всегда используется активная модель). |
+| `language` | строка | — | Код языка BCP-47 (например, `ru`, `en`, `zh`). Если не указан, язык определяется автоматически. |
+
+**Пример:**
 
 ```bash
 curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
@@ -202,6 +253,13 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
     -F model=whisper-1 \
     -F language=ru
 ```
+
+**Ответ:**
+```json
+{"text": "Транскрибированный текст появляется здесь."}
+```
+
+### Интерактивная документация API
 
 Интерактивная документация Swagger UI:
 
@@ -216,7 +274,7 @@ http://ip_вашего_сервера:8000/docs
 ```
 /var/lib/whisper-live/
 ├── models--Systran--faster-whisper-*/   # Кэшированные файлы модели Whisper (загружены с HuggingFace)
-├── .port                 # Активный порт WebSocket (используется whisper_live_manage)
+├── .ws_port              # Активный порт WebSocket (используется whisper_live_manage)
 ├── .rest_port            # Активный порт REST API (используется whisper_live_manage)
 ├── .model                # Активное имя модели (используется whisper_live_manage)
 └── .server_addr          # Кэшированный IP сервера (используется whisper_live_manage)
@@ -245,6 +303,28 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
    ```bash
    docker restart whisper-live
    ```
+
+**Доступные модели:**
+
+| Модель | Диск | ОЗУ (примерно) | Примечания |
+|---|---|---|---|
+| `tiny` | ~75 МБ | ~250 МБ | Самая быстрая; низкая точность |
+| `tiny.en` | ~75 МБ | ~250 МБ | Только английский |
+| `base` | ~145 МБ | ~700 МБ | Хороший баланс — **по умолчанию** |
+| `base.en` | ~145 МБ | ~700 МБ | Только английский |
+| `small` | ~465 МБ | ~1,5 ГБ | Повышенная точность |
+| `small.en` | ~465 МБ | ~1,5 ГБ | Только английский |
+| `medium` | ~1,5 ГБ | ~5 ГБ | Высокая точность |
+| `medium.en` | ~1,5 ГБ | ~5 ГБ | Только английский |
+| `large-v1` | ~3 ГБ | ~10 ГБ | Старая большая модель |
+| `large-v2` | ~3 ГБ | ~10 ГБ | Очень высокая точность |
+| `large-v3` | ~3 ГБ | ~10 ГБ | Наивысшая точность |
+| `large-v3-turbo` | ~1,6 ГБ | ~6 ГБ | Быстрая + высокая точность ⭐ |
+| `turbo` | ~1,6 ГБ | ~6 ГБ | Псевдоним для `large-v3-turbo` |
+
+> **Совет:** `large-v3-turbo` обеспечивает точность, близкую к `large-v3`, при вдвое меньшем потреблении ресурсов. Для большинства производственных развёртываний это рекомендуемый вариант обновления с `base`.
+
+Данные по памяти являются приблизительными и учитывают квантование INT8 (по умолчанию). Модели кэшируются в Docker-томе `/var/lib/whisper-live` и загружаются только один раз.
 
 ## Использование обратного прокси
 
@@ -310,7 +390,7 @@ docker rm -f whisper-live
 
 ## Использование с другими AI-сервисами
 
-[WhisperLive (STT в реальном времени)](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-ru.md), [Whisper (пакетный STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md) и [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md) можно объединить для построения полного приватного AI-стека на собственном сервере. При использовании LiteLLM с внешними провайдерами (например, OpenAI, Anthropic) ваши данные будут переданы этим провайдерам.
+[WhisperLive (STT в реальном времени)](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md) и [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md) можно объединить для построения полного приватного AI-стека на собственном сервере. При использовании LiteLLM с внешними провайдерами (например, OpenAI, Anthropic) ваши данные будут переданы этим провайдерам.
 
 ```mermaid
 graph LR
@@ -327,37 +407,9 @@ graph LR
 | Сервис | Назначение | Порт по умолчанию |
 |---|---|---|
 | **[WhisperLive (STT в реальном времени)](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-ru.md)** | Потоковое транскрибирование через WebSocket | `9090` (WS), `8000` (REST) |
-| **[Whisper (пакетный STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md)** | Транскрибирование готовых аудиофайлов через REST API | `9000` |
 | **[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md)** | Преобразование текста в векторы для семантического поиска и RAG | `8000` |
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)** | AI-шлюз — маршрутизация запросов к OpenAI, Anthropic, Ollama и 100+ другим провайдерам | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md)** | Преобразование текста в естественную речь | `8880` |
-
-### Пример RAG-конвейера
-
-Векторизация документов для семантического поиска, извлечение контекста и ответы на вопросы с помощью LLM:
-
-```bash
-# Шаг 1: Векторизуем фрагмент документа и сохраняем в векторную БД
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker упрощает развёртывание, упаковывая приложения в контейнеры.", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → Сохраните возвращённый вектор вместе с исходным текстом в Qdrant, Chroma, pgvector и т. д.
-
-# Шаг 2: При запросе векторизуем вопрос, извлекаем наиболее релевантные фрагменты
-#          из векторной БД, затем передаём вопрос и контекст в LiteLLM.
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "Отвечай только на основе предоставленного контекста."},
-        {"role": "user", "content": "Что делает Docker?\n\nКонтекст: Docker упрощает развёртывание, упаковывая приложения в контейнеры."}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
 
 ### Пример конвейера живого голоса
 
@@ -388,6 +440,33 @@ def on_segment(segments):
 client = TranscriptionClient("localhost", 9090, lang="ru", model="base", use_vad=True)
 client()
 EOF
+```
+
+### Пример RAG-конвейера
+
+Векторизация документов для семантического поиска, извлечение контекста и ответы на вопросы с помощью LLM:
+
+```bash
+# Шаг 1: Векторизуем фрагмент документа и сохраняем в векторную БД
+curl -s http://localhost:8000/v1/embeddings \
+    -H "Content-Type: application/json" \
+    -d '{"input": "Docker упрощает развёртывание, упаковывая приложения в контейнеры.", "model": "text-embedding-ada-002"}' \
+    | jq '.data[0].embedding'
+# → Сохраните возвращённый вектор вместе с исходным текстом в Qdrant, Chroma, pgvector и т. д.
+
+# Шаг 2: При запросе векторизуем вопрос, извлекаем наиболее релевантные фрагменты
+#          из векторной БД, затем передаём вопрос и контекст в LiteLLM.
+curl -s http://localhost:4000/v1/chat/completions \
+    -H "Authorization: Bearer <your-litellm-key>" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "gpt-4o",
+      "messages": [
+        {"role": "system", "content": "Отвечай только на основе предоставленного контекста."},
+        {"role": "user", "content": "Что делает Docker?\n\nКонтекст: Docker упрощает развёртывание, упаковывая приложения в контейнеры."}
+      ]
+    }' \
+    | jq -r '.choices[0].message.content'
 ```
 
 ## Техническая информация
