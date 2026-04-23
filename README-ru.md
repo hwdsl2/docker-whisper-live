@@ -361,6 +361,9 @@ server {
     location /v1/ {
         proxy_pass         http://127.0.0.1:8000;
         proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
         proxy_read_timeout 300s;
     }
 
@@ -377,6 +380,39 @@ server {
 ```
 
 > **Важно:** Для проксирования WebSocket необходимы `proxy_http_version 1.1` и заголовки `Upgrade`/`Connection`. Без них потоковая передача в реальном времени через nginx работать не будет.
+
+**Добавление аутентификации на уровне прокси:**
+
+Сервер сам по себе не требует API-ключ. Для развёртываний с доступом из интернета можно добавить Bearer-токен или базовую аутентификацию на уровне обратного прокси. Пример с Caddy (`basicauth` защищает REST API):
+
+```
+whisper-live.example.com {
+  handle /v1/* {
+    basicauth {
+      user $2a$14$<bcrypt-hash-of-password>
+    }
+    reverse_proxy whisper-live:8000
+  }
+  handle /ws* {
+    reverse_proxy whisper-live:9090
+  }
+  reverse_proxy whisper-live:8000
+}
+```
+
+Пример с nginx (`auth_basic` на location REST API):
+
+```nginx
+location /v1/ {
+    auth_basic           "WhisperLive";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    proxy_pass           http://127.0.0.1:8000;
+    proxy_set_header     Host $host;
+    proxy_read_timeout   300s;
+}
+```
+
+WebSocket-эндпоинт (`/`, порт `9090`) не поддерживает HTTP-заголовки аутентификации; защитите его, привязав порт к `127.0.0.1` и разместив за обратным прокси с контролем доступа на сетевом уровне.
 
 ## Обновление Docker-образа
 

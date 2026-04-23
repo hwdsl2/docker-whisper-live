@@ -425,6 +425,8 @@ server {
         proxy_pass         http://127.0.0.1:8000;
         proxy_set_header   Host $host;
         proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
         proxy_read_timeout 300s;
     }
 
@@ -441,6 +443,39 @@ server {
 ```
 
 > **重要：** WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 请求头。若缺少这些配置，实时流式传输将无法通过 nginx 正常工作。
+
+**在代理层添加身份验证：**
+
+服务器本身不强制要求 API 密钥验证。对于面向互联网的部署，可以在反向代理层添加 Bearer 令牌或基本身份验证。使用 Caddy 的示例（`basicauth` 保护 REST API）：
+
+```
+whisper-live.example.com {
+  handle /v1/* {
+    basicauth {
+      user $2a$14$<bcrypt-hash-of-password>
+    }
+    reverse_proxy whisper-live:8000
+  }
+  handle /ws* {
+    reverse_proxy whisper-live:9090
+  }
+  reverse_proxy whisper-live:8000
+}
+```
+
+使用 nginx 的示例（在 REST API location 上启用 `auth_basic`）：
+
+```nginx
+location /v1/ {
+    auth_basic           "WhisperLive";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    proxy_pass           http://127.0.0.1:8000;
+    proxy_set_header     Host $host;
+    proxy_read_timeout   300s;
+}
+```
+
+WebSocket 端点（`/`，端口 `9090`）不支持 HTTP 身份验证头；请将其端口绑定到 `127.0.0.1` 并通过反向代理进行访问控制来保护它。
 
 ## 更新 Docker 镜像
 

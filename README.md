@@ -444,6 +444,39 @@ server {
 
 > **Important:** WebSocket proxying requires `proxy_http_version 1.1` and the `Upgrade`/`Connection` headers. Without these, real-time streaming will not work through nginx.
 
+**Adding authentication at the proxy layer:**
+
+The server itself does not enforce API key authentication. For internet-facing deployments, you can add Bearer token or basic auth at the reverse proxy layer. Example with Caddy (`basicauth` protects the REST API):
+
+```
+whisper-live.example.com {
+  handle /v1/* {
+    basicauth {
+      user $2a$14$<bcrypt-hash-of-password>
+    }
+    reverse_proxy whisper-live:8000
+  }
+  handle /ws* {
+    reverse_proxy whisper-live:9090
+  }
+  reverse_proxy whisper-live:8000
+}
+```
+
+Example with nginx (`auth_basic` on the REST API location):
+
+```nginx
+location /v1/ {
+    auth_basic           "WhisperLive";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    proxy_pass           http://127.0.0.1:8000;
+    proxy_set_header     Host $host;
+    proxy_read_timeout   300s;
+}
+```
+
+The WebSocket endpoint (`/`, port `9090`) does not support HTTP authentication headers; secure it by keeping the port bound to `127.0.0.1` and placing it behind the reverse proxy with network-level access controls.
+
 ## Update Docker image
 
 To update the Docker image and container, first [download](#download) the latest version:
