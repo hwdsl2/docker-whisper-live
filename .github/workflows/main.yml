@@ -6,10 +6,12 @@ on:
     paths:
       - '.github/workflows/main.yml'
       - '.github/workflows/buildx.yml'
+      - '.github/workflows/buildx-cuda.yml'
       - '.github/workflows/shellcheck.yml'
       - '.github/workflows/whisper_live_test.yml'
       - '.dockerignore'
       - 'Dockerfile'
+      - 'Dockerfile.cuda'
       - 'manage.sh'
       - 'run.sh'
 
@@ -25,6 +27,16 @@ jobs:
   buildx:
     needs: [shellcheck, whisper_live_test]
     uses: ./.github/workflows/buildx.yml
+    secrets:
+      CACHE_NAME: ${{ secrets.CACHE_NAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      QUAY_USER: ${{ secrets.QUAY_USER }}
+      QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+      BUILD_ONLY: ${{ secrets.BUILD_ONLY }}
+
+  buildx-cuda:
+    needs: [shellcheck, whisper_live_test]
+    uses: ./.github/workflows/buildx-cuda.yml
     secrets:
       CACHE_NAME: ${{ secrets.CACHE_NAME }}
       DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
