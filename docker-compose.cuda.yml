@@ -1,0 +1,21 @@
+services:
+  whisper-live:
+    image: hwdsl2/whisper-live-server:cuda
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket — for a host-based reverse proxy, change to "127.0.0.1:9090:9090/tcp"
+      - "8000:8000/tcp"  # REST API  — for a host-based reverse proxy, change to "127.0.0.1:8000:8000/tcp"
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  whisper-live-data:
