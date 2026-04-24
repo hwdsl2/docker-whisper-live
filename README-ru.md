@@ -14,10 +14,11 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - Обнаружение голосовой активности (VAD) — автоматически пропускает тишину для более быстрого и чистого транскрибирования
 - Управление моделями через вспомогательный скрипт (`whisper_live_manage`)
 - Аудио остаётся на вашем сервере — данные не передаются третьим сторонам
+- Ускорение на GPU NVIDIA (CUDA) для более быстрого инференса (тег образа `:cuda`)
 - Офлайн-режим — работа без доступа к интернету с предварительно загруженными моделями (`WHISPERLIVE_LOCAL_ONLY`)
 - Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml)
-- Постоянный кэш моделей в Docker-томе, совместимый с `docker-whisper`
-- Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64`
+- Постоянный кэш моделей через Docker-том
+- Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64` (тег `:cuda` только для `linux/amd64`)
 
 **Также доступно:**
 
@@ -34,7 +35,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 | **Протокол** | HTTP REST | WebSocket (потоковый) + HTTP REST |
 | **Задержка** | Ответ после обработки всего файла | Почти мгновенно, слово за словом |
 | **Подходит для** | Записи совещаний, загруженные аудиофайлы | Захват в браузере, RTSP-потоки, живые субтитры |
-| **Размер образа** | ~180 МБ | ~730 МБ (включает PyTorch для VAD) |
+| **Размер образа** | ~180 МБ (~3 ГБ для `:cuda`) | ~730 МБ (~4,5 ГБ для `:cuda`) |
 
 ## Быстрый старт
 
@@ -49,6 +50,26 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+<details>
+<summary><strong>Быстрый старт с GPU (NVIDIA CUDA)</strong></summary>
+
+Если у вас есть GPU NVIDIA, используйте образ `:cuda` для аппаратного ускорения инференса:
+
+```bash
+docker run \
+    --name whisper-live \
+    --restart=always \
+    --gpus=all \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    -d hwdsl2/whisper-live-server:cuda
+```
+
+**Требования:** GPU NVIDIA, [драйвер NVIDIA](https://www.nvidia.com/en-us/drivers/) 535+, установленный на хосте [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). Образ `:cuda` поддерживает только `linux/amd64`.
+
+</details>
 
 **Важно:** Для работы образа с моделью `base` по умолчанию требуется не менее 700 МБ свободной оперативной памяти. Системы с 512 МБ ОЗУ и менее не поддерживаются.
 
@@ -87,7 +108,15 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
 - Поддерживаемые архитектуры: `amd64` (x86_64), `arm64` (например, Raspberry Pi 4/5, AWS Graviton)
 - Минимум ОЗУ: ~700 МБ свободной памяти для модели `base` по умолчанию (см. [таблицу моделей](#смена-модели))
 - Доступ к интернету для первоначальной загрузки модели (после чего она кэшируется локально). Не требуется при использовании `WHISPERLIVE_LOCAL_ONLY=true` с предварительно загруженными моделями.
-- **Только CPU:** Этот образ работает исключительно на CPU. Модели `tiny` и `base` хорошо справляются с потоковой передачей через WebSocket в реальном времени на CPU. Модели `small` и крупнее работают медленнее на CPU и могут не успевать за живым аудиопотоком — используйте их только если точность транскрибирования важнее задержки в реальном времени.
+
+**Для ускорения на GPU (образ `:cuda`):**
+
+- GPU NVIDIA с поддержкой CUDA (Compute Capability 6.0+)
+- [Драйвер NVIDIA](https://www.nvidia.com/en-us/drivers/) версии 535 или новее на хосте
+- Установленный [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+- Образ `:cuda` поддерживает только `linux/amd64`
+
+Для развёртывания с выходом в интернет см. раздел [Использование обратного прокси](#использование-обратного-прокси) для включения HTTPS.
 
 ## Загрузка
 
@@ -97,6 +126,12 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
 docker pull hwdsl2/whisper-live-server
 ```
 
+Для GPU-ускорения NVIDIA используйте тег `:cuda`:
+
+```bash
+docker pull hwdsl2/whisper-live-server:cuda
+```
+
 Или из [Quay.io](https://quay.io/repository/hwdsl2/whisper-live-server):
 
 ```bash
@@ -104,7 +139,7 @@ docker pull quay.io/hwdsl2/whisper-live-server
 docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 ```
 
-Поддерживаемые платформы: `linux/amd64` и `linux/arm64`.
+Поддерживаемые платформы: `linux/amd64` и `linux/arm64`. Тег `:cuda` поддерживает только `linux/amd64`.
 
 ## Переменные окружения
 
@@ -138,13 +173,90 @@ docker run \
     -d hwdsl2/whisper-live-server
 ```
 
+Файл `env` монтируется в контейнер, изменения применяются при каждом перезапуске без пересоздания контейнера.
+
+Либо передайте его через `--env-file`:
+
+```bash
+docker run \
+    --name whisper-live \
+    --restart=always \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    --env-file=whisper-live.env \
+    -d hwdsl2/whisper-live-server
+```
+
 ## Использование docker-compose
 
 ```bash
 cp whisper-live.env.example whisper-live.env
+# Отредактируйте whisper-live.env при необходимости, затем:
 docker compose up -d
 docker logs whisper-live
 ```
+
+Пример `docker-compose.yml` (уже включён в проект):
+
+```yaml
+services:
+  whisper-live:
+    image: hwdsl2/whisper-live-server
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket — для хостового обратного прокси измените на "127.0.0.1:9090:9090/tcp"
+      - "8000:8000/tcp"  # REST API  — для хостового обратного прокси измените на "127.0.0.1:8000:8000/tcp"
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+
+volumes:
+  whisper-live-data:
+```
+
+**Примечание:** Для развёртывания с выходом в интернет настоятельно рекомендуется использовать [обратный прокси](#использование-обратного-прокси) для добавления HTTPS. В этом случае также измените порты на их `127.0.0.1:` варианты в `docker-compose.yml`.
+
+<details>
+<summary><strong>Использование docker-compose с GPU (NVIDIA CUDA)</strong></summary>
+
+Для развёртывания с GPU используется отдельный файл `docker-compose.cuda.yml`:
+
+```bash
+cp whisper-live.env.example whisper-live.env
+# Отредактируйте whisper-live.env при необходимости, затем:
+docker compose -f docker-compose.cuda.yml up -d
+docker logs whisper-live
+```
+
+Пример `docker-compose.cuda.yml` (уже включён в проект):
+
+```yaml
+services:
+  whisper-live:
+    image: hwdsl2/whisper-live-server:cuda
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket — для хостового обратного прокси измените на "127.0.0.1:9090:9090/tcp"
+      - "8000:8000/tcp"  # REST API  — для хостового обратного прокси измените на "127.0.0.1:8000:8000/tcp"
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  whisper-live-data:
+```
+
+</details>
 
 ## Потоковая передача через WebSocket
 
@@ -280,9 +392,9 @@ http://ip_вашего_сервера:8000/docs
 └── .server_addr          # Кэшированный IP сервера (используется whisper_live_manage)
 ```
 
-**Совет:** Том `/var/lib/whisper-live` использует ту же схему кэша HuggingFace, что и том `/var/lib/whisper` проекта `docker-whisper`. Если вы уже скачали модель с помощью `docker-whisper`, можно примонтировать тот же каталог тома, чтобы избежать повторной загрузки.
-
 Загруженные модели сохраняются в томе `whisper-live-data`. Создавайте резервные копии Docker-тома для сохранения загруженных моделей. Модели занимают от 145 МБ до 3 ГБ и могут загружаться несколько минут при первом подключении клиента; сохранение тома позволяет избежать повторной загрузки при пересоздании контейнера.
+
+**Совет:** Том `/var/lib/whisper-live` использует ту же схему кэша HuggingFace, что и том `/var/lib/whisper` проекта `docker-whisper`. Если вы уже скачали модель с помощью `docker-whisper`, можно примонтировать тот же каталог тома, чтобы избежать повторной загрузки.
 
 ## Управление сервером
 
@@ -509,8 +621,8 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 - Базовый образ: `python:3.12-slim` (Debian)
 - Среда выполнения: Python 3 (виртуальное окружение в `/opt/venv`)
-- STT-движок: [WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) с CTranslate2 (INT8 по умолчанию)
-- VAD: [Silero VAD](https://github.com/snakers4/silero-vad) через PyTorch (CPU)
+- STT-движок: [WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) с CTranslate2 (INT8 на CPU, FP16 на CUDA)
+- VAD: [Silero VAD](https://github.com/snakers4/silero-vad) через PyTorch (CPU или CUDA, определяется автоматически)
 - WebSocket-сервер: библиотека Python `websockets`
 - REST API: [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - Директория данных: `/var/lib/whisper-live` (Docker-том)

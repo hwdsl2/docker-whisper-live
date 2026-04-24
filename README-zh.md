@@ -14,10 +14,11 @@
 - 语音活动检测（VAD）— 自动跳过静音段，实现更快、更干净的转录
 - 通过辅助脚本 (`whisper_live_manage`) 管理模型
 - 音频数据留在您的服务器上，不发送给第三方
+- NVIDIA GPU (CUDA) 加速推理（使用 `:cuda` 镜像标签）
 - 离线/隔离网络模式 — 使用预先缓存的模型无需互联网访问 (`WHISPERLIVE_LOCAL_ONLY`)
 - 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) 自动构建和发布
-- 通过 Docker 数据卷持久化模型缓存，与 `docker-whisper` 缓存布局兼容
-- 多架构支持：`linux/amd64`、`linux/arm64`
+- 通过 Docker 数据卷持久化模型缓存
+- 多架构支持：`linux/amd64`、`linux/arm64`（`:cuda` 标签仅支持 `linux/amd64`）
 
 **另提供：**
 
@@ -34,7 +35,7 @@
 | **协议** | HTTP REST | WebSocket（流式）+ HTTP REST |
 | **延迟** | 完整文件处理后返回结果 | 近实时，逐词输出 |
 | **适合** | 会议录音、上传的音频文件 | 浏览器采集、RTSP 流、实时字幕 |
-| **镜像大小** | ~180 MB | ~730 MB（包含用于 VAD 的 PyTorch） |
+| **镜像大小** | ~180 MB（`:cuda` 约 3 GB） | ~730 MB（`:cuda` 约 4.5 GB） |
 
 ## 快速开始
 
@@ -49,6 +50,26 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+<details>
+<summary><strong>GPU 快速开始（NVIDIA CUDA）</strong></summary>
+
+如果您有 NVIDIA GPU，可使用 `:cuda` 镜像进行硬件加速推理：
+
+```bash
+docker run \
+    --name whisper-live \
+    --restart=always \
+    --gpus=all \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    -d hwdsl2/whisper-live-server:cuda
+```
+
+**要求：** NVIDIA GPU、[NVIDIA 驱动](https://www.nvidia.com/en-us/drivers/) 535+，以及主机上已安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)。`:cuda` 镜像仅支持 `linux/amd64`。
+
+</details>
 
 **重要：** 此镜像运行默认 `base` 模型需要至少 700 MB 可用内存。内存为 512 MB 或更少的系统不受支持。
 
@@ -87,7 +108,13 @@ curl http://您的服务器IP:8000/v1/audio/transcriptions \
 - 支持的架构：`amd64`（x86_64）、`arm64`（例如 Raspberry Pi 4/5、AWS Graviton）
 - 最低内存：默认 `base` 模型约需 700 MB 可用内存（请参阅[模型列表](#切换模型)）
 - 首次启动需要访问互联网以下载模型（之后模型将缓存在本地）。使用预先缓存的模型并设置 `WHISPERLIVE_LOCAL_ONLY=true` 时不需要网络访问。
-- **仅 CPU 镜像：** 本镜像仅支持 CPU 运行。`tiny` 和 `base` 模型在 CPU 上可满足实时 WebSocket 流式传输的需求。`small` 及更大的模型在 CPU 上速度较慢，可能无法实时跟上音频流——仅在转录精度比实时延迟更重要时使用这些模型。
+
+**GPU 加速（`:cuda` 镜像）要求：**
+
+- 支持 CUDA 的 NVIDIA GPU（计算能力 6.0+）
+- 主机已安装 [NVIDIA 驱动](https://www.nvidia.com/en-us/drivers/) 535 或更高版本
+- 已安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+- `:cuda` 镜像仅支持 `linux/amd64`
 
 如需面向公网部署，请参阅[使用反向代理](#使用反向代理)以启用 HTTPS。
 
@@ -99,6 +126,12 @@ curl http://您的服务器IP:8000/v1/audio/transcriptions \
 docker pull hwdsl2/whisper-live-server
 ```
 
+如需 NVIDIA GPU 加速，请拉取 `:cuda` 标签：
+
+```bash
+docker pull hwdsl2/whisper-live-server:cuda
+```
+
 也可从 [Quay.io](https://quay.io/repository/hwdsl2/whisper-live-server) 下载：
 
 ```bash
@@ -106,7 +139,7 @@ docker pull quay.io/hwdsl2/whisper-live-server
 docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 ```
 
-支持平台：`linux/amd64` 和 `linux/arm64`。
+支持平台：`linux/amd64` 和 `linux/arm64`。`:cuda` 标签仅支持 `linux/amd64`。
 
 ## 环境变量
 
@@ -188,6 +221,46 @@ volumes:
 ```
 
 **注：** 如需面向公网部署，强烈建议使用[反向代理](#使用反向代理)启用 HTTPS。此时请将 `docker-compose.yml` 中的端口改为其 `127.0.0.1:` 形式。
+
+<details>
+<summary><strong>使用 docker-compose 部署 GPU（NVIDIA CUDA）</strong></summary>
+
+项目提供了单独的 `docker-compose.cuda.yml` 用于 GPU 部署：
+
+```bash
+cp whisper-live.env.example whisper-live.env
+# 按需编辑 whisper-live.env，然后：
+docker compose -f docker-compose.cuda.yml up -d
+docker logs whisper-live
+```
+
+示例 `docker-compose.cuda.yml`（已包含在项目中）：
+
+```yaml
+services:
+  whisper-live:
+    image: hwdsl2/whisper-live-server:cuda
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket — 如使用主机反向代理，改为 "127.0.0.1:9090:9090/tcp"
+      - "8000:8000/tcp"  # REST API  — 如使用主机反向代理，改为 "127.0.0.1:8000:8000/tcp"
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  whisper-live-data:
+```
+
+</details>
 
 ## WebSocket 流式传输
 
@@ -323,9 +396,9 @@ http://您的服务器IP:8000/docs
 └── .server_addr          # 缓存的服务器 IP（供 whisper_live_manage 使用）
 ```
 
-**提示：** `/var/lib/whisper-live` 数据卷与 `docker-whisper` 的 `/var/lib/whisper` 数据卷使用相同的 HuggingFace 缓存布局。如果已通过 `docker-whisper` 下载了模型，可绑定挂载相同的数据卷目录以避免重复下载。
-
 请备份 Docker 数据卷以保留已下载的模型。模型体积较大（145 MB – 3 GB），首次客户端连接时下载可能需要数分钟；保留数据卷可避免在重新创建容器时重复下载。
+
+**提示：** `/var/lib/whisper-live` 数据卷与 `docker-whisper` 的 `/var/lib/whisper` 数据卷使用相同的 HuggingFace 缓存布局。如果已通过 `docker-whisper` 下载了模型，可绑定挂载相同的数据卷目录以避免重复下载。
 
 ## 管理服务器
 
@@ -585,8 +658,8 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 - 基础镜像：`python:3.12-slim`（Debian）
 - 运行时：Python 3（虚拟环境位于 `/opt/venv`）
-- STT 引擎：[WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + CTranslate2（默认 INT8）
-- VAD：通过 PyTorch（CPU）使用 [Silero VAD](https://github.com/snakers4/silero-vad)
+- STT 引擎：[WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + CTranslate2（CPU 默认 INT8，CUDA 默认 FP16）
+- VAD：通过 PyTorch（CPU 或 CUDA，自动检测）使用 [Silero VAD](https://github.com/snakers4/silero-vad)
 - WebSocket 服务器：Python `websockets` 库
 - REST API 框架：[FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - 数据目录：`/var/lib/whisper-live`（Docker 数据卷）

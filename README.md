@@ -14,10 +14,11 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - Voice Activity Detection (VAD) — automatically skips silence for faster, cleaner transcription
 - Model management via a helper script (`whisper_live_manage`)
 - Audio stays on your server — no data sent to third parties
+- NVIDIA GPU (CUDA) acceleration for faster inference (`:cuda` image tag)
 - Offline/air-gapped mode — run without internet access using pre-cached models (`WHISPERLIVE_LOCAL_ONLY`)
 - Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml)
-- Persistent model cache via a Docker volume — compatible with the `docker-whisper` cache layout
-- Multi-arch: `linux/amd64`, `linux/arm64`
+- Persistent model cache via a Docker volume
+- Multi-arch: `linux/amd64`, `linux/arm64` (`:cuda` tag is `linux/amd64` only)
 
 **Also available:**
 
@@ -34,7 +35,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 | **Protocol** | HTTP REST | WebSocket (streaming) + HTTP REST |
 | **Latency** | Full file, then response | Near-real-time, word by word |
 | **Best for** | Meeting recordings, uploaded audio | Browser capture, RTSP streams, live captions |
-| **Image size** | ~180 MB | ~730 MB (includes PyTorch for VAD) |
+| **Image size** | ~180 MB (~3 GB for `:cuda`) | ~730 MB (~4.5 GB for `:cuda`) |
 
 ## Quick start
 
@@ -49,6 +50,26 @@ docker run \
     -p 8000:8000 \
     -d hwdsl2/whisper-live-server
 ```
+
+<details>
+<summary><strong>GPU quick start (NVIDIA CUDA)</strong></summary>
+
+If you have an NVIDIA GPU, use the `:cuda` image for hardware-accelerated inference:
+
+```bash
+docker run \
+    --name whisper-live \
+    --restart=always \
+    --gpus=all \
+    -v whisper-live-data:/var/lib/whisper-live \
+    -p 9090:9090 \
+    -p 8000:8000 \
+    -d hwdsl2/whisper-live-server:cuda
+```
+
+**Requirements:** NVIDIA GPU, [NVIDIA driver](https://www.nvidia.com/en-us/drivers/) 535+, and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host. The `:cuda` image is `linux/amd64` only.
+
+</details>
 
 **Important:** This image requires at least 700 MB of available RAM for the default `base` model. Systems with 512 MB or less of RAM are not supported.
 
@@ -87,7 +108,13 @@ curl http://your_server_ip:8000/v1/audio/transcriptions \
 - Supported architectures: `amd64` (x86_64), `arm64` (e.g. Raspberry Pi 4/5, AWS Graviton)
 - Minimum RAM: ~700 MB free for the default `base` model (see [model table](#switching-models))
 - Internet access for the initial model download (the model is cached locally afterwards). Not required if using `WHISPERLIVE_LOCAL_ONLY=true` with pre-cached models.
-- **CPU-only image:** This image runs on CPU only. The `tiny` and `base` models work well for real-time WebSocket streaming on CPU. The `small` and larger models are slower on CPU and may not keep up with live audio in real time — use them only if transcription accuracy is more important than real-time latency.
+
+**For GPU acceleration (`:cuda` image):**
+
+- NVIDIA GPU with CUDA support (Compute Capability 6.0+)
+- [NVIDIA driver](https://www.nvidia.com/en-us/drivers/) 535 or later installed on the host
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed
+- The `:cuda` image supports `linux/amd64` only
 
 For internet-facing deployments, see [Using a reverse proxy](#using-a-reverse-proxy) to add HTTPS.
 
@@ -99,6 +126,12 @@ Get the trusted build from the [Docker Hub registry](https://hub.docker.com/r/hw
 docker pull hwdsl2/whisper-live-server
 ```
 
+For NVIDIA GPU acceleration, pull the `:cuda` tag instead:
+
+```bash
+docker pull hwdsl2/whisper-live-server:cuda
+```
+
 Alternatively, you may download from [Quay.io](https://quay.io/repository/hwdsl2/whisper-live-server):
 
 ```bash
@@ -106,7 +139,7 @@ docker pull quay.io/hwdsl2/whisper-live-server
 docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 ```
 
-Supported platforms: `linux/amd64` and `linux/arm64`.
+Supported platforms: `linux/amd64` and `linux/arm64`. The `:cuda` tag supports `linux/amd64` only.
 
 ## Environment variables
 
@@ -188,6 +221,46 @@ volumes:
 ```
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"9090:9090/tcp"` and `"8000:8000/tcp"` to their `127.0.0.1:` equivalents in `docker-compose.yml`.
+
+<details>
+<summary><strong>Using docker-compose with GPU (NVIDIA CUDA)</strong></summary>
+
+A separate `docker-compose.cuda.yml` is provided for GPU deployments:
+
+```bash
+cp whisper-live.env.example whisper-live.env
+# Edit whisper-live.env as needed, then:
+docker compose -f docker-compose.cuda.yml up -d
+docker logs whisper-live
+```
+
+Example `docker-compose.cuda.yml` (already included):
+
+```yaml
+services:
+  whisper-live:
+    image: hwdsl2/whisper-live-server:cuda
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket — for a host-based reverse proxy, change to "127.0.0.1:9090:9090/tcp"
+      - "8000:8000/tcp"  # REST API  — for a host-based reverse proxy, change to "127.0.0.1:8000:8000/tcp"
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  whisper-live-data:
+```
+
+</details>
 
 ## WebSocket streaming
 
@@ -323,9 +396,9 @@ All server data is stored in the Docker volume (`/var/lib/whisper-live` inside t
 └── .server_addr          # Cached server IP (used by whisper_live_manage)
 ```
 
-**Tip:** The `/var/lib/whisper-live` volume uses the same HuggingFace cache layout as `docker-whisper`'s `/var/lib/whisper` volume. If you have already downloaded a model with `docker-whisper`, you can bind-mount the same volume directory to avoid re-downloading.
-
 Back up the Docker volume to preserve downloaded models. Models are large (145 MB – 3 GB) and can take several minutes to download on first client connection; preserving the volume avoids re-downloading on container recreation.
+
+**Tip:** The `/var/lib/whisper-live` volume uses the same HuggingFace cache layout as `docker-whisper`'s `/var/lib/whisper` volume. If you have already downloaded a model with `docker-whisper`, you can bind-mount the same volume directory to avoid re-downloading.
 
 ## Managing the server
 
@@ -585,8 +658,8 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 - Base image: `python:3.12-slim` (Debian)
 - Runtime: Python 3 (virtual environment at `/opt/venv`)
-- STT engine: [WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with CTranslate2 (INT8 by default)
-- VAD: [Silero VAD](https://github.com/snakers4/silero-vad) via PyTorch (CPU)
+- STT engine: [WhisperLive](https://github.com/collabora/WhisperLive) + [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with CTranslate2 (INT8 on CPU, FP16 on CUDA)
+- VAD: [Silero VAD](https://github.com/snakers4/silero-vad) via PyTorch (CPU or CUDA, auto-detected)
 - WebSocket server: Python `websockets` library
 - REST API framework: [FastAPI](https://fastapi.tiangolo.com/) + [Uvicorn](https://www.uvicorn.org/)
 - Data directory: `/var/lib/whisper-live` (Docker volume)
