@@ -18,7 +18,7 @@
 - 離線/隔離網路模式 — 使用預先快取的模型，無需網際網路存取 (`WHISPERLIVE_LOCAL_ONLY`)
 - 透過 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) 自動建置和發佈
 - 透過 Docker 資料卷持久化模型快取
-- 多架構支援：`linux/amd64`、`linux/arm64`（`:cuda` 標籤僅支援 `linux/amd64`）
+- 多架構支援：`linux/amd64`、`linux/arm64`
 
 **另提供：**
 
@@ -179,7 +179,8 @@ docker run \
 
 `env` 檔案以繫結掛載方式傳入容器，每次重新啟動時自動生效，無需重建容器。
 
-也可透過 `--env-file` 傳入：
+<details>
+<summary>也可透過 <code>--env-file</code> 傳入</summary>
 
 ```bash
 docker run \
@@ -191,6 +192,8 @@ docker run \
     --env-file=whisper-live.env \
     -d hwdsl2/whisper-live-server
 ```
+
+</details>
 
 ## 使用 docker-compose
 
@@ -499,7 +502,8 @@ server {
 
 > **重要：** WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 請求標頭。若缺少這些設定，即時串流將無法透過 nginx 正常運作。
 
-**在代理層新增身份驗證：**
+<details>
+<summary><strong>在代理層新增身份驗證</strong></summary>
 
 伺服器本身不強制要求 API 金鑰驗證。對於面向網際網路的部署，可以在反向代理層新增 Bearer 令牌或基本身份驗證。使用 Caddy 的範例（`basicauth` 保護 REST API）：
 
@@ -531,6 +535,8 @@ location /v1/ {
 ```
 
 WebSocket 端點（`/`，連接埠 `9090`）不支援 HTTP 身份驗證標頭；請將其連接埠繫結至 `127.0.0.1` 並透過反向代理進行存取控制來保護它。
+
+</details>
 
 ## 更新 Docker 映像
 
@@ -565,7 +571,8 @@ graph LR
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)** | AI 閘道——將請求路由至 OpenAI、Anthropic、Ollama 及 100+ 其他提供商 | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)** | 將文字轉換為自然語音 | `8880` |
 
-### 即時語音管道範例
+<details>
+<summary><strong>即時語音管道範例</strong></summary>
 
 即時轉錄語音並轉發給 LLM：
 
@@ -596,7 +603,10 @@ client()
 EOF
 ```
 
-### RAG 管道範例
+</details>
+
+<details>
+<summary><strong>RAG 管道範例</strong></summary>
 
 使用語意搜尋嵌入文件，檢索上下文後透過 LLM 回答問題：
 
@@ -622,6 +632,8 @@ curl -s http://localhost:4000/v1/chat/completions \
     }' \
     | jq -r '.choices[0].message.content'
 ```
+
+</details>
 
 ## 技術細節
 

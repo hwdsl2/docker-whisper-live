@@ -18,7 +18,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - Офлайн-режим — работа без доступа к интернету с предварительно загруженными моделями (`WHISPERLIVE_LOCAL_ONLY`)
 - Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml)
 - Постоянный кэш моделей через Docker-том
-- Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64` (тег `:cuda` только для `linux/amd64`)
+- Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64`
 
 **Также доступно:**
 
@@ -175,7 +175,8 @@ docker run \
 
 Файл `env` монтируется в контейнер, изменения применяются при каждом перезапуске без пересоздания контейнера.
 
-Либо передайте его через `--env-file`:
+<details>
+<summary>Либо передайте его через <code>--env-file</code></summary>
 
 ```bash
 docker run \
@@ -187,6 +188,8 @@ docker run \
     --env-file=whisper-live.env \
     -d hwdsl2/whisper-live-server
 ```
+
+</details>
 
 ## Использование docker-compose
 
@@ -493,7 +496,8 @@ server {
 
 > **Важно:** Для проксирования WebSocket необходимы `proxy_http_version 1.1` и заголовки `Upgrade`/`Connection`. Без них потоковая передача в реальном времени через nginx работать не будет.
 
-**Добавление аутентификации на уровне прокси:**
+<details>
+<summary><strong>Добавление аутентификации на уровне прокси</strong></summary>
 
 Сервер сам по себе не требует API-ключ. Для развёртываний с доступом из интернета можно добавить Bearer-токен или базовую аутентификацию на уровне обратного прокси. Пример с Caddy (`basicauth` защищает REST API):
 
@@ -525,6 +529,8 @@ location /v1/ {
 ```
 
 WebSocket-эндпоинт (`/`, порт `9090`) не поддерживает HTTP-заголовки аутентификации; защитите его, привязав порт к `127.0.0.1` и разместив за обратным прокси с контролем доступа на сетевом уровне.
+
+</details>
 
 ## Обновление Docker-образа
 
@@ -559,7 +565,8 @@ graph LR
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)** | AI-шлюз — маршрутизация запросов к OpenAI, Anthropic, Ollama и 100+ другим провайдерам | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md)** | Преобразование текста в естественную речь | `8880` |
 
-### Пример конвейера живого голоса
+<details>
+<summary><strong>Пример конвейера живого голоса</strong></summary>
 
 Транскрибирование речи в реальном времени с передачей в LLM:
 
@@ -590,7 +597,10 @@ client()
 EOF
 ```
 
-### Пример RAG-конвейера
+</details>
+
+<details>
+<summary><strong>Пример RAG-конвейера</strong></summary>
 
 Векторизация документов для семантического поиска, извлечение контекста и ответы на вопросы с помощью LLM:
 
@@ -616,6 +626,8 @@ curl -s http://localhost:4000/v1/chat/completions \
     }' \
     | jq -r '.choices[0].message.content'
 ```
+
+</details>
 
 ## Техническая информация
 

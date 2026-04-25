@@ -18,7 +18,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - Offline/air-gapped mode — run without internet access using pre-cached models (`WHISPERLIVE_LOCAL_ONLY`)
 - Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml)
 - Persistent model cache via a Docker volume
-- Multi-arch: `linux/amd64`, `linux/arm64` (`:cuda` tag is `linux/amd64` only)
+- Multi-arch: `linux/amd64`, `linux/arm64`
 
 **Also available:**
 
@@ -179,7 +179,8 @@ docker run \
 
 The env file is bind-mounted into the container, so changes are picked up on every restart without recreating the container.
 
-Alternatively, pass it with `--env-file`:
+<details>
+<summary>Alternatively, pass it with <code>--env-file</code></summary>
 
 ```bash
 docker run \
@@ -191,6 +192,8 @@ docker run \
     --env-file=whisper-live.env \
     -d hwdsl2/whisper-live-server
 ```
+
+</details>
 
 ## Using docker-compose
 
@@ -517,7 +520,8 @@ server {
 
 > **Important:** WebSocket proxying requires `proxy_http_version 1.1` and the `Upgrade`/`Connection` headers. Without these, real-time streaming will not work through nginx.
 
-**Adding authentication at the proxy layer:**
+<details>
+<summary><strong>Adding authentication at the proxy layer</strong></summary>
 
 The server itself does not enforce API key authentication. For internet-facing deployments, you can add Bearer token or basic auth at the reverse proxy layer. Example with Caddy (`basicauth` protects the REST API):
 
@@ -549,6 +553,8 @@ location /v1/ {
 ```
 
 The WebSocket endpoint (`/`, port `9090`) does not support HTTP authentication headers; secure it by keeping the port bound to `127.0.0.1` and placing it behind the reverse proxy with network-level access controls.
+
+</details>
 
 ## Update Docker image
 
@@ -596,7 +602,8 @@ graph LR
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm)** | AI gateway — routes requests to OpenAI, Anthropic, Ollama, and 100+ other providers | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro)** | Converts text to natural-sounding speech | `8880` |
 
-### Live voice pipeline example
+<details>
+<summary><strong>Live voice pipeline example</strong></summary>
 
 Transcribe live speech in real time and forward to an LLM:
 
@@ -627,7 +634,10 @@ client()
 EOF
 ```
 
-### RAG pipeline example
+</details>
+
+<details>
+<summary><strong>RAG pipeline example</strong></summary>
 
 Embed documents for semantic search, then retrieve context and answer questions with an LLM:
 
@@ -653,6 +663,8 @@ curl -s http://localhost:4000/v1/chat/completions \
     }' \
     | jq -r '.choices[0].message.content'
 ```
+
+</details>
 
 ## Technical details
 
