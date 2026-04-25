@@ -27,6 +27,7 @@ jobs:
           path: |
             ${{ runner.temp }}/.buildx-bin
             ${{ runner.temp }}/.buildx-cache
+            ${{ runner.temp }}/.buildx-cache-cuda
             ${{ runner.temp }}/.docker-images
           key: ${{ secrets.CACHE_NAME }}-${{ github.sha }}-${{ github.run_id }}-check
           restore-keys: |
@@ -34,14 +35,14 @@ jobs:
       - name: Prepare
         run: |
           docker pull python:3.12-slim
-          docker pull "$DOCKER_USER/whisper-live-server"
+          docker pull "$DOCKER_USER/whisper-live-server" || true
       - name: Check
         id: check
         run: |
           BASE_UPDATED=false
 
           base_ts=$(docker inspect --format='{{.Created}}' python:3.12-slim)
-          image_ts=$(docker inspect --format='{{.Created}}' "$DOCKER_USER/whisper-live-server")
+          image_ts=$(docker inspect --format='{{.Created}}' "$DOCKER_USER/whisper-live-server" 2>/dev/null || true)
 
           if [ -n "$base_ts" ] && [ -n "$image_ts" ]; then
             base_ts_s=$(date -d "$base_ts" +%s)
@@ -64,6 +65,9 @@ jobs:
             else
               echo "Not starting build."
             fi
+          elif [ -n "$base_ts" ] && [ -z "$image_ts" ]; then
+            echo "Image not found. Starting initial build..."
+            BASE_UPDATED=true
           fi
           echo "should_test=${BASE_UPDATED}" >> "$GITHUB_OUTPUT"
           echo "should_update=${BASE_UPDATED}" >> "$GITHUB_OUTPUT"
