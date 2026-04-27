@@ -2,7 +2,7 @@
 
 # WhisperLive 实时语音转文字 Docker 镜像
 
-[![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+[![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
 使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 WebSocket 流式传输，以及用于文件转录的 OpenAI 兼容 REST API。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
 
@@ -70,6 +70,8 @@ docker run \
 **要求：** NVIDIA GPU、[NVIDIA 驱动](https://www.nvidia.com/en-us/drivers/) 535+，以及主机上已安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)。`:cuda` 镜像仅支持 `linux/amd64`。
 
 </details>
+
+**在线试用：** [在 Colab 中打开](https://vpnsetup.net/whisper-live-notebook)。无需 Docker 或安装，直接在浏览器中运行。
 
 **重要：** 此镜像运行默认 `base` 模型需要至少 700 MB 可用内存。内存为 512 MB 或更少的系统不受支持。
 
