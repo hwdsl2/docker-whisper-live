@@ -22,6 +22,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 
 **Also available:**
 
+- Try it online: [Open in Colab](https://vpnsetup.net/whisper-live-notebook) — no Docker or installation required
 - AI/Audio: [Whisper (batch STT)](https://github.com/hwdsl2/docker-whisper), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm)
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server), [Headscale](https://github.com/hwdsl2/docker-headscale)
 
@@ -70,10 +71,6 @@ docker run \
 **Requirements:** NVIDIA GPU, [NVIDIA driver](https://www.nvidia.com/en-us/drivers/) 535+, and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host. The `:cuda` image is `linux/amd64` only.
 
 </details>
-
-**Try it online:** [Open in Colab](https://vpnsetup.net/whisper-live-notebook). No Docker or installation required. Runs in your browser.
-
-**Important:** This image requires at least 700 MB of available RAM for the default `base` model. Systems with 512 MB or less of RAM are not supported.
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted ports.
 
