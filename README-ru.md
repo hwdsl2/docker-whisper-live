@@ -632,6 +632,89 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 </details>
 
+
+<details>
+<summary><strong>Пример docker-compose для полного стека</strong></summary>
+
+Разверните все сервисы одной командой. LiteLLM подключается к Ollama внутри общей сети Docker — установите `LITELLM_OLLAMA_BASE_URL=http://ollama:11434` в `litellm.env`.
+
+**Требования к ресурсам:** Для одновременной работы всех сервисов требуется не менее 8 ГБ ОЗУ (с небольшими моделями). Для крупных моделей LLM (8B+) рекомендуется 32 ГБ и более. Вы можете закомментировать ненужные сервисы для экономии памяти.
+
+```yaml
+services:
+  ollama:
+    image: hwdsl2/ollama-server
+    container_name: ollama
+    restart: always
+    # ports:
+    #   - "11434:11434/tcp"  # Раскомментируйте для прямого доступа к Ollama
+    volumes:
+      - ollama-data:/var/lib/ollama
+      - ./ollama.env:/ollama.env:ro
+
+  litellm:
+    image: hwdsl2/litellm-server
+    container_name: litellm
+    restart: always
+    ports:
+      - "4000:4000/tcp"
+    volumes:
+      - litellm-data:/etc/litellm
+      - ./litellm.env:/litellm.env:ro
+
+  embeddings:
+    image: hwdsl2/embeddings-server
+    container_name: embeddings
+    restart: always
+    ports:
+      - "8000:8000/tcp"
+    volumes:
+      - embeddings-data:/var/lib/embeddings
+      - ./embed.env:/embed.env:ro
+
+  whisper-live:
+    image: hwdsl2/whisper-live-server
+    container_name: whisper-live
+    restart: always
+    ports:
+      - "9090:9090/tcp"  # WebSocket
+      - "8001:8000/tcp"  # REST API (remapped to avoid conflict with embeddings)
+    volumes:
+      - whisper-live-data:/var/lib/whisper-live
+      - ./whisper-live.env:/whisper-live.env:ro
+
+  kokoro:
+    image: hwdsl2/kokoro-server
+    container_name: kokoro
+    restart: always
+    ports:
+      - "8880:8880/tcp"
+    volumes:
+      - kokoro-data:/var/lib/kokoro
+      - ./kokoro.env:/kokoro.env:ro
+
+volumes:
+  ollama-data:
+  litellm-data:
+  embeddings-data:
+  whisper-live-data:
+  kokoro-data:
+```
+
+Для ускорения на NVIDIA GPU измените теги образов на `:cuda` для ollama, whisper-live и kokoro, и добавьте следующее к каждому из этих сервисов:
+
+```yaml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+```
+
+</details>
+
 ## Техническая информация
 
 - Базовый образ: `python:3.12-slim` (Debian)
