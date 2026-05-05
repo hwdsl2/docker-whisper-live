@@ -27,7 +27,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md), [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md), [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
 - Инструменты: [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
-**Подсказка:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama и MCP-шлюз можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного приватного AI-стека на собственном сервере.
+**Совет:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama и MCP-шлюз можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного self-hosted AI-стека на собственном сервере. См. [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) — готовые конфигурации и примеры конвейеров.
 
 ## WhisperLive или Whisper?
 
@@ -546,20 +546,7 @@ docker rm -f whisper-live
 
 ## Использование с другими AI-сервисами
 
-[WhisperLive (STT в реальном времени)](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md) и [MCP-шлюз](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md) можно объединить для построения полного приватного AI-стека на собственном сервере — от голосового ввода/вывода в реальном времени до RAG-поиска с ответами. WhisperLive, Kokoro и Embeddings работают полностью локально. Ollama выполняет весь инференс LLM локально, данные не отправляются третьим сторонам. Если вы настроите LiteLLM с внешними провайдерами (например, OpenAI, Anthropic), ваши данные будут переданы этим провайдерам для обработки.
-
-```mermaid
-graph LR
-    D["📄 Документы"] -->|векторизация| E["Embeddings<br/>(текст → векторы)"]
-    E -->|хранение| VDB["Векторная БД<br/>(Qdrant, Chroma)"]
-    A["🎤 Живой звук"] -->|поток| WL["WhisperLive<br/>(STT в реальном времени)"]
-    WL -->|запрос| E
-    VDB -->|контекст| L["LiteLLM<br/>(AI-шлюз)"]
-    WL -->|текст| L
-    L -->|маршрут к| O["Ollama<br/>(локальная LLM)"]
-    L -->|ответ| T["Kokoro TTS<br/>(синтез речи)"]
-    T --> B["🔊 Аудиовыход"]
-```
+[WhisperLive (STT в реальном времени)](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md) и [MCP-шлюз](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md) можно объединить для построения полного self-hosted AI-стека на собственном сервере — от голосового ввода/вывода в реальном времени до RAG-поиска с ответами. WhisperLive, Kokoro и Embeddings работают полностью локально. Ollama выполняет весь инференс LLM локально, данные не отправляются третьим сторонам. Если вы настроите LiteLLM с внешними провайдерами (например, OpenAI, Anthropic), ваши данные будут переданы этим провайдерам для обработки.
 
 | Сервис | Назначение | Порт по умолчанию |
 |---|---|---|
@@ -570,165 +557,7 @@ graph LR
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md)** | Запускает локальные LLM-модели (llama3, qwen, mistral и др.) | `11434` |
 | **[MCP-шлюз](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)** | Предоставляет сервисы ИИ как MCP-инструменты для ИИ-ассистентов (Claude, Cursor и др.) | `3000` |
 
-<details>
-<summary><strong>Пример конвейера живого голоса</strong></summary>
-
-Транскрибирование речи в реальном времени с передачей в LLM:
-
-```bash
-# Установите клиентскую библиотеку
-pip install whisper-live openai
-
-# Потоковая передача с микрофона, вывод каждого сегмента, отправка в LLM
-python3 - <<'EOF'
-from whisper_live.client import TranscriptionClient
-from openai import OpenAI
-
-llm = OpenAI(base_url="http://localhost:4000", api_key="your-litellm-key")
-
-def on_segment(segments):
-    for seg in segments:
-        if seg.get("completed"):
-            text = seg["text"].strip()
-            print(f"Транскрипция: {text}")
-            resp = llm.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "user", "content": text}],
-            )
-            print(f"LLM: {resp.choices[0].message.content}")
-
-client = TranscriptionClient("localhost", 9090, lang="ru", model="base", use_vad=True)
-client()
-EOF
-```
-
-</details>
-
-<details>
-<summary><strong>Пример RAG-конвейера</strong></summary>
-
-Векторизация документов для семантического поиска, извлечение контекста и ответы на вопросы с помощью LLM:
-
-```bash
-# Шаг 1: Векторизуем фрагмент документа и сохраняем в векторную БД
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker упрощает развёртывание, упаковывая приложения в контейнеры.", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → Сохраните возвращённый вектор вместе с исходным текстом в Qdrant, Chroma, pgvector и т. д.
-
-# Шаг 2: При запросе векторизуем вопрос, извлекаем наиболее релевантные фрагменты
-#          из векторной БД, затем передаём вопрос и контекст в LiteLLM.
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "Отвечай только на основе предоставленного контекста."},
-        {"role": "user", "content": "Что делает Docker?\n\nКонтекст: Docker упрощает развёртывание, упаковывая приложения в контейнеры."}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
-
-</details>
-
-
-<details>
-<summary><strong>Пример docker-compose для полного стека</strong></summary>
-
-Разверните все сервисы одной командой. LiteLLM подключается к Ollama внутри общей сети Docker — установите `LITELLM_OLLAMA_BASE_URL=http://ollama:11434` в `litellm.env`.
-
-**Требования к ресурсам:** Для одновременной работы всех сервисов требуется не менее 8 ГБ ОЗУ (с небольшими моделями). Для крупных моделей LLM (8B+) рекомендуется 32 ГБ и более. Вы можете закомментировать ненужные сервисы для экономии памяти.
-
-```yaml
-services:
-  ollama:
-    image: hwdsl2/ollama-server
-    container_name: ollama
-    restart: always
-    # ports:
-    #   - "11434:11434/tcp"  # Раскомментируйте для прямого доступа к Ollama
-    volumes:
-      - ollama-data:/var/lib/ollama
-      # - ./ollama.env:/ollama.env:ro  # optional: custom config
-
-  litellm:
-    image: hwdsl2/litellm-server
-    container_name: litellm
-    restart: always
-    ports:
-      - "4000:4000/tcp"
-    environment:
-      - LITELLM_OLLAMA_BASE_URL=http://ollama:11434
-    volumes:
-      - litellm-data:/etc/litellm
-      # - ./litellm.env:/litellm.env:ro  # optional: custom config
-
-  embeddings:
-    image: hwdsl2/embeddings-server
-    container_name: embeddings
-    restart: always
-    ports:
-      - "8000:8000/tcp"
-    volumes:
-      - embeddings-data:/var/lib/embeddings
-      # - ./embed.env:/embed.env:ro  # optional: custom config
-
-  whisper-live:
-    image: hwdsl2/whisper-live-server
-    container_name: whisper-live
-    restart: always
-    ports:
-      - "9090:9090/tcp"  # WebSocket
-      - "8001:8000/tcp"  # REST API (remapped to avoid conflict with embeddings)
-    volumes:
-      - whisper-live-data:/var/lib/whisper-live
-      # - ./whisper-live.env:/whisper-live.env:ro  # optional: custom config
-
-  kokoro:
-    image: hwdsl2/kokoro-server
-    container_name: kokoro
-    restart: always
-    ports:
-      - "8880:8880/tcp"
-    volumes:
-      - kokoro-data:/var/lib/kokoro
-      # - ./kokoro.env:/kokoro.env:ro  # optional: custom config
-
-  mcp:
-    image: hwdsl2/mcp-gateway
-    container_name: mcp
-    restart: always
-    ports:
-      - "3000:3000/tcp"
-    volumes:
-      - mcp-data:/var/lib/mcp
-      # - ./mcp.env:/mcp.env:ro  # optional: custom config
-
-volumes:
-  ollama-data:
-  litellm-data:
-  embeddings-data:
-  whisper-live-data:
-  kokoro-data:
-  mcp-data:
-```
-
-Для ускорения на NVIDIA GPU измените теги образов на `:cuda` для ollama, whisper-live и kokoro, и добавьте следующее к каждому из этих сервисов:
-
-```yaml
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-```
-
-</details>
+**См. также: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — готовые docker-compose конфигурации и примеры конвейеров. Узнайте больше о развёртывании полного AI-стека.
 
 ## Техническая информация
 

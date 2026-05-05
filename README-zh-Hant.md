@@ -27,7 +27,7 @@
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md)
 - 工具：[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
 
-**提示：** WhisperLive、Kokoro、Embeddings、LiteLLM、Ollama 和 MCP 閘道可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的私密 AI 系統。
+**提示：** WhisperLive、Kokoro、Embeddings、LiteLLM、Ollama 和 MCP 閘道可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的自託管 AI 系統。參見 [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)，取得現成的設定和流水線範例。
 
 ## WhisperLive 與 Whisper 的選擇
 
@@ -552,20 +552,7 @@ docker rm -f whisper-live
 
 ## 與其他 AI 服務搭配使用
 
-[WhisperLive（即時 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md) 和 [MCP 閘道](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md) 映像可以組合使用，在您自己的伺服器上建立完整的私密 AI 系統——從即時語音輸入/輸出到檢索增強生成（RAG）。WhisperLive、Kokoro 和 Embeddings 完全在本地端執行。Ollama 在本地端執行所有 LLM 推論，無需向第三方傳送資料。如果您將 LiteLLM 設定為使用外部提供商（例如 OpenAI、Anthropic），您的資料將被傳送至這些提供商處理。
-
-```mermaid
-graph LR
-    D["📄 文件"] -->|向量化| E["Embeddings<br/>(文字 → 向量)"]
-    E -->|儲存| VDB["向量資料庫<br/>(Qdrant, Chroma)"]
-    A["🎤 即時音訊"] -->|串流傳輸| WL["WhisperLive<br/>(即時 STT)"]
-    WL -->|查詢| E
-    VDB -->|上下文| L["LiteLLM<br/>(AI 閘道)"]
-    WL -->|文字| L
-    L -->|路由到| O["Ollama<br/>(本地 LLM)"]
-    L -->|回覆| T["Kokoro TTS<br/>(文字轉語音)"]
-    T --> B["🔊 音訊輸出"]
-```
+[WhisperLive（即時 STT）](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md) 和 [MCP 閘道](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md) 映像可以組合使用，在您自己的伺服器上建立完整的自託管 AI 系統——從即時語音輸入/輸出到檢索增強生成（RAG）。WhisperLive、Kokoro 和 Embeddings 完全在本地端執行。Ollama 在本地端執行所有 LLM 推論，無需向第三方傳送資料。如果您將 LiteLLM 設定為使用外部提供商（例如 OpenAI、Anthropic），您的資料將被傳送至這些提供商處理。
 
 | 服務 | 功能 | 預設連接埠 |
 |---|---|---|
@@ -576,165 +563,7 @@ graph LR
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)** | 執行本地 LLM 模型（llama3、qwen、mistral 等） | `11434` |
 | **[MCP 閘道](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)** | 將 AI 服務作為 MCP 工具提供給 AI 助手（Claude、Cursor 等） | `3000` |
 
-<details>
-<summary><strong>即時語音管道範例</strong></summary>
-
-即時轉錄語音並轉發給 LLM：
-
-```bash
-# 安裝客戶端程式庫
-pip install whisper-live openai
-
-# 從麥克風串流傳輸，列印每個轉錄段落，傳送給 LLM
-python3 - <<'EOF'
-from whisper_live.client import TranscriptionClient
-from openai import OpenAI
-
-llm = OpenAI(base_url="http://localhost:4000", api_key="your-litellm-key")
-
-def on_segment(segments):
-    for seg in segments:
-        if seg.get("completed"):
-            text = seg["text"].strip()
-            print(f"轉錄：{text}")
-            resp = llm.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "user", "content": text}],
-            )
-            print(f"LLM：{resp.choices[0].message.content}")
-
-client = TranscriptionClient("localhost", 9090, lang="zh", model="base", use_vad=True)
-client()
-EOF
-```
-
-</details>
-
-<details>
-<summary><strong>RAG 管道範例</strong></summary>
-
-使用語意搜尋嵌入文件，檢索上下文後透過 LLM 回答問題：
-
-```bash
-# 第一步：將文件區塊向量化並存入向量資料庫
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker 透過將應用程式封裝到容器中來簡化部署。", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → 將回傳的向量與原始文字一起存入 Qdrant、Chroma、pgvector 等。
-
-# 第二步：查詢時對問題向量化，從向量資料庫檢索最相關的文件區塊，
-#          然後將問題和檢索到的上下文傳送給 LiteLLM。
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "僅使用提供的上下文回答問題。"},
-        {"role": "user", "content": "Docker 有什麼作用？\n\n上下文：Docker 透過將應用程式封裝到容器中來簡化部署。"}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
-
-</details>
-
-
-<details>
-<summary><strong>完整技術堆疊 docker-compose 範例</strong></summary>
-
-使用一條命令部署所有服務。LiteLLM 透過共享 Docker 網路內部連接到 Ollama — 在 `litellm.env` 中設置 `LITELLM_OLLAMA_BASE_URL=http://ollama:11434`。
-
-**資源需求：** 同時運行所有服務至少需要 8 GB 記憶體（使用小型模型）。對於較大的 LLM 模型（8B+），建議 32 GB 或更多。您可以註解掉不需要的服務以減少記憶體使用。
-
-```yaml
-services:
-  ollama:
-    image: hwdsl2/ollama-server
-    container_name: ollama
-    restart: always
-    # ports:
-    #   - "11434:11434/tcp"  # 取消註解以直接存取 Ollama
-    volumes:
-      - ollama-data:/var/lib/ollama
-      # - ./ollama.env:/ollama.env:ro  # optional: custom config
-
-  litellm:
-    image: hwdsl2/litellm-server
-    container_name: litellm
-    restart: always
-    ports:
-      - "4000:4000/tcp"
-    environment:
-      - LITELLM_OLLAMA_BASE_URL=http://ollama:11434
-    volumes:
-      - litellm-data:/etc/litellm
-      # - ./litellm.env:/litellm.env:ro  # optional: custom config
-
-  embeddings:
-    image: hwdsl2/embeddings-server
-    container_name: embeddings
-    restart: always
-    ports:
-      - "8000:8000/tcp"
-    volumes:
-      - embeddings-data:/var/lib/embeddings
-      # - ./embed.env:/embed.env:ro  # optional: custom config
-
-  whisper-live:
-    image: hwdsl2/whisper-live-server
-    container_name: whisper-live
-    restart: always
-    ports:
-      - "9090:9090/tcp"  # WebSocket
-      - "8001:8000/tcp"  # REST API (remapped to avoid conflict with embeddings)
-    volumes:
-      - whisper-live-data:/var/lib/whisper-live
-      # - ./whisper-live.env:/whisper-live.env:ro  # optional: custom config
-
-  kokoro:
-    image: hwdsl2/kokoro-server
-    container_name: kokoro
-    restart: always
-    ports:
-      - "8880:8880/tcp"
-    volumes:
-      - kokoro-data:/var/lib/kokoro
-      # - ./kokoro.env:/kokoro.env:ro  # optional: custom config
-
-  mcp:
-    image: hwdsl2/mcp-gateway
-    container_name: mcp
-    restart: always
-    ports:
-      - "3000:3000/tcp"
-    volumes:
-      - mcp-data:/var/lib/mcp
-      # - ./mcp.env:/mcp.env:ro  # optional: custom config
-
-volumes:
-  ollama-data:
-  litellm-data:
-  embeddings-data:
-  whisper-live-data:
-  kokoro-data:
-  mcp-data:
-```
-
-如需 NVIDIA GPU 加速，將 ollama、whisper-live 和 kokoro 的映像標籤改為 `:cuda`，並為這些服務添加以下配置：
-
-```yaml
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-```
-
-</details>
+**另請參閱：[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — 提供現成的 docker-compose 設定和流水線範例。了解更多關於完整 AI 技術堆疊的部署方法。
 
 ## 技術細節
 

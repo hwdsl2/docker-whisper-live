@@ -27,7 +27,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server), [Headscale](https://github.com/hwdsl2/docker-headscale)
 - Tools: [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
-**Tip:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, private AI stack on your own server.
+**Tip:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server. See [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) for ready-made configurations and pipeline examples.
 
 ## When to use WhisperLive vs. Whisper
 
@@ -581,189 +581,18 @@ Your downloaded models are preserved in the `whisper-live-data` volume.
 
 ## Using with other AI services
 
-The [WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama), and [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway) images can be combined to build a complete, private AI stack on your own server — from live voice I/O to RAG-powered question answering. WhisperLive, Kokoro, and Embeddings run fully locally. Ollama runs all LLM inference locally, so no data is sent to third parties. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
-
-```mermaid
-graph LR
-    D["📄 Documents"] -->|embed| E["Embeddings<br/>(text → vectors)"]
-    E -->|store| VDB["Vector DB<br/>(Qdrant, Chroma)"]
-    A["🎤 Live audio"] -->|stream| WL["WhisperLive<br/>(real-time STT)"]
-    WL -->|query| E
-    VDB -->|context| L["LiteLLM<br/>(AI gateway)"]
-    WL -->|text| L
-    L -->|routes to| O["Ollama<br/>(local LLM)"]
-    L -->|response| T["Kokoro TTS<br/>(text-to-speech)"]
-    T --> B["🔊 Audio output"]
-    L -->|MCP protocol| M["MCP Gateway<br/>(MCP endpoint)"]
-    M --> C["🤖 AI assistant<br/>(Claude, Cursor, etc.)"]
-```
+The [WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama), and [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway) images can be combined to build a complete, self-hosted AI stack on your own server — from live voice I/O to RAG-powered question answering. WhisperLive, Kokoro, and Embeddings run fully locally. Ollama runs all LLM inference locally, so no data is sent to third parties. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
 
 | Service | Role | Default port |
 |---|---|---|
 | **[WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live)** | Real-time WebSocket streaming transcription for live audio | `9090` (WS), `8000` (REST) |
 | **[Embeddings](https://github.com/hwdsl2/docker-embeddings)** | Converts text to vectors for semantic search and RAG | `8000` |
-| **[LiteLLM](https://github.com/hwdsl2/docker-litellm)** | AI gateway — routes requests to OpenAI, Anthropic, Ollama, and 100+ other providers | `4000` |
+| **[LiteLLM](https://github.com/hwdsl2/docker-litellm)** | AI gateway — routes requests to Ollama, OpenAI, Anthropic, and 100+ providers | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro)** | Converts text to natural-sounding speech | `8880` |
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama)** | Runs local LLM models (llama3, qwen, mistral, etc.) | `11434` |
 | **[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)** | Exposes AI services as MCP tools for AI assistants (Claude, Cursor, etc.) | `3000` |
 
-<details>
-<summary><strong>Live voice pipeline example</strong></summary>
-
-Transcribe live speech in real time and forward to an LLM:
-
-```bash
-# Install the client library
-pip install whisper-live openai
-
-# Stream from microphone, print each transcription segment, send to LLM
-python3 - <<'EOF'
-from whisper_live.client import TranscriptionClient
-from openai import OpenAI
-
-llm = OpenAI(base_url="http://localhost:4000", api_key="your-litellm-key")
-
-def on_segment(segments):
-    for seg in segments:
-        if seg.get("completed"):
-            text = seg["text"].strip()
-            print(f"Transcribed: {text}")
-            resp = llm.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "user", "content": text}],
-            )
-            print(f"LLM: {resp.choices[0].message.content}")
-
-client = TranscriptionClient("localhost", 9090, lang="en", model="base", use_vad=True)
-client()
-EOF
-```
-
-</details>
-
-<details>
-<summary><strong>RAG pipeline example</strong></summary>
-
-Embed documents for semantic search, then retrieve context and answer questions with an LLM:
-
-```bash
-# Step 1: Embed a document chunk and store the vector in your vector DB
-curl -s http://localhost:8000/v1/embeddings \
-    -H "Content-Type: application/json" \
-    -d '{"input": "Docker simplifies deployment by packaging apps in containers.", "model": "text-embedding-ada-002"}' \
-    | jq '.data[0].embedding'
-# → Store the returned vector alongside the source text in Qdrant, Chroma, pgvector, etc.
-
-# Step 2: At query time, embed the question, retrieve the top matching chunks from
-#          the vector DB, then send the question and retrieved context to LiteLLM.
-curl -s http://localhost:4000/v1/chat/completions \
-    -H "Authorization: Bearer <your-litellm-key>" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "gpt-4o",
-      "messages": [
-        {"role": "system", "content": "Answer using only the provided context."},
-        {"role": "user", "content": "What does Docker do?\n\nContext: Docker simplifies deployment by packaging apps in containers."}
-      ]
-    }' \
-    | jq -r '.choices[0].message.content'
-```
-
-</details>
-
-
-<details>
-<summary><strong>Full stack docker-compose example</strong></summary>
-
-Deploy all services with a single command. No setup required — all services auto-configure with secure defaults on first start.
-
-**Resource requirements:** Running all services together requires at least 8 GB of RAM (with small models). For larger LLM models (8B+), 32 GB or more is recommended. You can comment out services you don't need to reduce memory usage.
-
-```yaml
-services:
-  ollama:
-    image: hwdsl2/ollama-server
-    container_name: ollama
-    restart: always
-    # ports:
-    #   - "11434:11434/tcp"  # Uncomment for direct access to Ollama
-    volumes:
-      - ollama-data:/var/lib/ollama
-      - ./ollama.env:/ollama.env:ro
-
-  litellm:
-    image: hwdsl2/litellm-server
-    container_name: litellm
-    restart: always
-    ports:
-      - "4000:4000/tcp"
-    volumes:
-      - litellm-data:/etc/litellm
-      - ./litellm.env:/litellm.env:ro
-
-  embeddings:
-    image: hwdsl2/embeddings-server
-    container_name: embeddings
-    restart: always
-    ports:
-      - "8000:8000/tcp"
-    volumes:
-      - embeddings-data:/var/lib/embeddings
-      - ./embed.env:/embed.env:ro
-
-  whisper-live:
-    image: hwdsl2/whisper-live-server
-    container_name: whisper-live
-    restart: always
-    ports:
-      - "9090:9090/tcp"  # WebSocket
-      - "8001:8000/tcp"  # REST API (remapped to avoid conflict with embeddings)
-    volumes:
-      - whisper-live-data:/var/lib/whisper-live
-      - ./whisper-live.env:/whisper-live.env:ro
-
-  kokoro:
-    image: hwdsl2/kokoro-server
-    container_name: kokoro
-    restart: always
-    ports:
-      - "8880:8880/tcp"
-    volumes:
-      - kokoro-data:/var/lib/kokoro
-      - ./kokoro.env:/kokoro.env:ro
-
-  mcp:
-    image: hwdsl2/mcp-gateway
-    container_name: mcp
-    restart: always
-    ports:
-      - "3000:3000/tcp"
-    volumes:
-      - mcp-data:/var/lib/mcp
-      - ./mcp.env:/mcp.env:ro
-
-volumes:
-  ollama-data:
-  litellm-data:
-  embeddings-data:
-  whisper-live-data:
-  kokoro-data:
-  mcp-data:
-```
-
-For NVIDIA GPU acceleration, change image tags to `:cuda` for ollama, whisper-live, and kokoro, and add the following to each of those services:
-
-```yaml
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-```
-
-</details>
+**See also: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — ready-made docker-compose configurations and pipeline examples. Learn more about deploying the full AI stack.
 
 ## Technical details
 
