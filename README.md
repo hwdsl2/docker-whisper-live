@@ -102,6 +102,17 @@ curl http://your_server_ip:8000/v1/audio/transcriptions \
 {"text": "Your transcribed text appears here."}
 ```
 
+**Tip:** Need a sample audio file to test the REST API? Download this English speech sample (WAV, MIT License) from the [Azure Samples](https://github.com/Azure-Samples/cognitive-services-speech-sdk) repository:
+
+```bash
+curl -L -o sample_speech.wav \
+    "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
+
+curl http://your_server_ip:8000/v1/audio/transcriptions \
+    -F file=@sample_speech.wav \
+    -F model=whisper-1
+```
+
 ## Requirements
 
 - A Linux server (local or cloud) with Docker installed

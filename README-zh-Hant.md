@@ -104,6 +104,17 @@ curl http://您的伺服器IP:8000/v1/audio/transcriptions \
 {"text": "轉錄的文字內容顯示在這裡。"}
 ```
 
+**提示：** 需要範例音訊檔案測試 REST API？可以使用來自 [Azure Samples](https://github.com/Azure-Samples/cognitive-services-speech-sdk) 儲存庫的英語語音範例（WAV 格式，MIT 授權）：
+
+```bash
+curl -L -o sample_speech.wav \
+    "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
+
+curl http://您的伺服器IP:8000/v1/audio/transcriptions \
+    -F file=@sample_speech.wav \
+    -F model=whisper-1
+```
+
 ## 系統需求
 
 - 已安裝 Docker 的 Linux 伺服器（本地或雲端）

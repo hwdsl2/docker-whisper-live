@@ -104,6 +104,17 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
 {"text": "Транскрибированный текст появляется здесь."}
 ```
 
+**Совет:** Нужен образец аудиофайла для тестирования REST API? Можно использовать этот образец английской речи (WAV, лицензия MIT) из репозитория [Azure Samples](https://github.com/Azure-Samples/cognitive-services-speech-sdk):
+
+```bash
+curl -L -o sample_speech.wav \
+    "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
+
+curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
+    -F file=@sample_speech.wav \
+    -F model=whisper-1
+```
+
 ## Требования
 
 - Сервер Linux (локальный или облачный) с установленным Docker
