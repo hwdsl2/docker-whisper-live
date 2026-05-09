@@ -234,6 +234,7 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
 ```
 
 **注：** 如需面向公网部署，强烈建议使用[反向代理](#使用反向代理)启用 HTTPS。此时请将 `docker-compose.yml` 中的端口改为其 `127.0.0.1:` 形式。
@@ -274,6 +275,7 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
 ```
 
 </details>

@@ -230,6 +230,7 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
 ```
 
 **Примечание:** Для развёртывания с выходом в интернет настоятельно рекомендуется использовать [обратный прокси](#использование-обратного-прокси) для добавления HTTPS. В этом случае также измените порты на их `127.0.0.1:` варианты в `docker-compose.yml`.
@@ -270,6 +271,7 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
 ```
 
 </details>

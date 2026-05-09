@@ -232,6 +232,7 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
 ```
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"9090:9090/tcp"` and `"8000:8000/tcp"` to their `127.0.0.1:` equivalents in `docker-compose.yml`.
@@ -272,6 +273,7 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
 ```
 
 </details>
