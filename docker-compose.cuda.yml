@@ -19,3 +19,4 @@ services:
 
 volumes:
   whisper-live-data:
+    name: whisper-live-data
