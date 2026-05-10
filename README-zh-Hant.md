@@ -27,7 +27,7 @@
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md)
 - 工具：[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
 
-**提示：** WhisperLive、Kokoro、Embeddings、LiteLLM、Ollama 和 MCP 閘道可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的自託管 AI 系統。參見 [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)，取得現成的設定和流水線範例。
+**提示：** WhisperLive、Kokoro、Embeddings、LiteLLM、Ollama 和 MCP 閘道可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的自託管 AI 系統。使用 [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) 快速開始，一條命令即可部署完整技術堆疊。
 
 ## WhisperLive 與 Whisper 的選擇
 
@@ -576,7 +576,7 @@ docker rm -f whisper-live
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)** | 執行本地 LLM 模型（llama3、qwen、mistral 等） | `11434` |
 | **[MCP 閘道](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)** | 將 AI 服務作為 MCP 工具提供給 AI 助手（Claude、Cursor 等） | `3000` |
 
-**另請參閱：[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — 提供現成的 docker-compose 設定和流水線範例。了解更多關於完整 AI 技術堆疊的部署方法。
+**另請參閱：[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — 一條命令即可部署完整技術堆疊，提供現成的設定和流水線範例。
 
 ## 技術細節
 

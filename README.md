@@ -27,7 +27,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server), [Headscale](https://github.com/hwdsl2/docker-headscale)
 - Tools: [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
-**Tip:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server. See [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) for ready-made configurations and pipeline examples.
+**Tip:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server. Get started quickly with [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack). Deploy the full stack with a single command.
 
 ## When to use WhisperLive vs. Whisper
 
@@ -605,7 +605,7 @@ The [WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live)
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama)** | Runs local LLM models (llama3, qwen, mistral, etc.) | `11434` |
 | **[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)** | Exposes AI services as MCP tools for AI assistants (Claude, Cursor, etc.) | `3000` |
 
-**See also: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — ready-made docker-compose configurations and pipeline examples. Learn more about deploying the full AI stack.
+**See also: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — deploy the full stack with a single command, with ready-made configurations and pipeline examples.
 
 ## Technical details
 
