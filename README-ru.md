@@ -31,6 +31,10 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 
 **Совет:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, Docling и MCP-шлюз можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного self-hosted AI-стека на собственном сервере.
 
+## Сообщество
+
+- Обсуждения и примеры: [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
+
 ## WhisperLive или Whisper?
 
 | | [docker-whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md) | **docker-whisper-live** |

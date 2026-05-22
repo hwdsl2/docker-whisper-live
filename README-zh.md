@@ -31,6 +31,10 @@
 
 **提示：** WhisperLive、Kokoro、Embeddings、LiteLLM、Ollama、Docling 和 MCP 网关可以[配合使用](#与其他-ai-服务配合使用)，在您自己的服务器上搭建完整的自托管 AI 系统。
 
+## 社区
+
+- 讨论与展示：[r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
+
 ## WhisperLive 与 Whisper 的选择
 
 | | [docker-whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md) | **docker-whisper-live** |

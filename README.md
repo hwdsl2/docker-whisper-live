@@ -31,6 +31,10 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 
 **Tip:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, Docling, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server.
 
+## Community
+
+- Discussions and showcases: [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
+
 ## When to use WhisperLive vs. Whisper
 
 | | [docker-whisper](https://github.com/hwdsl2/docker-whisper) | **docker-whisper-live** |
