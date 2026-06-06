@@ -486,6 +486,22 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
 
 内存数据为近似值，基于 INT8 量化（默认）。模型缓存在 `/var/lib/whisper-live` Docker 数据卷中，只需下载一次。
 
+## 保护你的服务器
+
+如果你的 WhisperLive 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。WhisperLive 对 CPU/GPU 资源消耗较大，未做防护的接口可能被滥用，浪费你的计算资源。
+
+**1. 在代理处添加身份验证。** 服务器没有内置 API 密钥。对于面向公网的部署，请在反向代理层添加 Bearer 令牌或基本身份验证——请参阅[使用反向代理](#使用反向代理)章节中的"在代理层添加身份验证"展开内容。将 WebSocket 端口（`9090`）绑定到 `127.0.0.1`，使其只能通过代理访问。
+
+**2. 在反向代理后面时绑定到 localhost。** 将 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`（或在 `docker-compose.yml` 中将两个端口映射改为各自的 `127.0.0.1:` 等效形式），使未加密端口无法从主机外部直接访问。
+
+**3. 在代理处限制上传大小。** 音频文件可能很大；配置反向代理以拒绝超大上传（例如 nginx `client_max_body_size 100M;`），从而限制单个请求占用的磁盘和内存。
+
+**4. 注意日志级别。** `WHISPERLIVE_LOG_LEVEL=DEBUG` 可能会将转录文本写入日志。在共享系统上请保持 `INFO` 或更高级别。
+
+**5. 在代理处限制 WebSocket 来源。** 来自不受信任浏览器来源的 WebSocket 连接可在反向代理处被拦截。对于 nginx，在升级连接前检查 `$http_origin`；对于 Caddy，使用 `header` 指令验证 `Origin` 标头。
+
+**6. 考虑限流。** 在服务器前部署限流（如 nginx `limit_req_zone`、Caddy `rate_limit`），限制每个客户端 IP 的并发转录请求数。
+
 ## 使用反向代理
 
 如需面向公网部署，可在服务器前置反向代理处理 HTTPS 和 WSS（安全 WebSocket）终止。

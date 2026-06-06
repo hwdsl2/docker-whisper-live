@@ -484,6 +484,22 @@ To change the active model:
 
 RAM figures are approximate and reflect INT8 quantization (default). Models are cached in the `/var/lib/whisper-live` Docker volume and only downloaded once.
 
+## Securing your server
+
+If your WhisperLive server is reachable from the public internet — even briefly — apply at minimum these protections. WhisperLive is CPU/GPU-intensive, so an unprotected endpoint can be abused to burn your compute resources.
+
+**1. Add authentication at the proxy.** The server has no built-in API key. For internet-facing deployments, add Bearer token or basic auth at the reverse proxy layer — see the "Adding authentication at the proxy layer" collapsible in the [Using a reverse proxy](#using-a-reverse-proxy) section. Keep the WebSocket port (`9090`) bound to `127.0.0.1` and accessible only through the proxy.
+
+**2. Bind to localhost when fronted by a reverse proxy.** Replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` (or change both port mappings to their `127.0.0.1:` equivalents in `docker-compose.yml`) so the unencrypted ports are not reachable directly from outside the host.
+
+**3. Limit upload size at the proxy.** Audio files can be large; configure your reverse proxy to reject oversized uploads (e.g. nginx `client_max_body_size 100M;`). This bounds the disk and memory footprint of a single request.
+
+**4. Mind the log level.** `WHISPERLIVE_LOG_LEVEL=DEBUG` may write transcript text to logs. Keep it at `INFO` or higher on shared systems.
+
+**5. Restrict WebSocket origins at the proxy.** WebSocket connections from untrusted browser origins can be blocked at the reverse proxy. For nginx, check `$http_origin` before upgrading the connection; for Caddy, use the `header` directive to validate the `Origin` header.
+
+**6. Consider rate limiting.** Place a rate-limit (e.g. nginx `limit_req_zone`, Caddy `rate_limit`) in front of the server to cap concurrent transcriptions per client IP.
+
 ## Using a reverse proxy
 
 For internet-facing deployments, place a reverse proxy in front of the server to handle HTTPS and WSS (secure WebSocket) termination.
