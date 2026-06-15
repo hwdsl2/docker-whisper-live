@@ -4,7 +4,7 @@
 
 [![Build Status](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-Part of the [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) — deploy a complete self-hosted AI stack with a single command.
+Part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack) — deploy a complete self-hosted AI stack with a single command.
 
 Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) real-time speech-to-text server, powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Provides WebSocket streaming for live audio transcription and an OpenAI-compatible REST API for file transcription. Based on Debian (python:3.12-slim). Designed to be simple, private, and self-hosted.
 
@@ -24,7 +24,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 
 **Also available:**
 
-- AI stack: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)
+- AI stack: [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack)
 - Try it online: [Open in Colab](https://vpnsetup.net/whisper-live-notebook) — no Docker or installation required
 - Related AI services: [Whisper (batch STT)](https://github.com/hwdsl2/docker-whisper), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
@@ -631,7 +631,7 @@ The WhisperLive (real-time STT), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM)
 | **[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)** | Exposes AI services as MCP tools for AI assistants (Claude, Cursor, etc.) | `3000` |
 | **[Docling](https://github.com/hwdsl2/docker-docling)** | Converts documents (PDF, DOCX, etc.) to structured text/Markdown | `5001` |
 
-**See also: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — deploy the full stack with a single command, with ready-made configurations and pipeline examples.
+**See also: [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack)** — deploy the full stack with a single command, with ready-made configurations and pipeline examples.
 
 ## Technical details
 

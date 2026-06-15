@@ -4,7 +4,7 @@
 
 [![Статус сборки](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-Часть [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-ru.md) — разверните полный самостоятельно размещённый AI-стек одной командой.
+Часть [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md) — разверните полный самостоятельно размещённый AI-стек одной командой.
 
 Docker-образ для запуска сервера [WhisperLive](https://github.com/collabora/WhisperLive) с транскрибированием речи в реальном времени на базе [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Предоставляет потоковую передачу через WebSocket для распознавания живого аудио и совместимый с OpenAI REST API для транскрибирования файлов. Основан на Debian (python:3.12-slim). Простой, приватный, для самостоятельного развёртывания.
 
@@ -24,7 +24,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 
 **Также доступно:**
 
-- AI-стек: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-ru.md)
+- AI-стек: [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md)
 - Попробовать онлайн: [Открыть в Colab](https://vpnsetup.net/whisper-live-notebook) — Docker и установка не требуются
 - Связанные AI-сервисы: [Whisper (пакетный STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
@@ -596,7 +596,7 @@ WhisperLive (STT в реальном времени), Embeddings, LiteLLM, Kokor
 | **[MCP-шлюз](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)** | Предоставляет сервисы ИИ как MCP-инструменты для ИИ-ассистентов (Claude, Cursor и др.) | `3000` |
 | **[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md)** | Конвертирует документы (PDF, DOCX и др.) в структурированный текст/Markdown | `5001` |
 
-**См. также: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-ru.md)** — разверните полный стек одной командой, с готовыми конфигурациями и примерами конвейеров.
+**См. также: [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md)** — разверните полный стек одной командой, с готовыми конфигурациями и примерами конвейеров.
 
 ## Техническая информация
 

@@ -21,7 +21,7 @@ A clear and concise description of the problem.
 
 **Deployment context**
 - [ ] Standalone container
-- [ ] Part of [docker-ai-stack](https://github.com/hwdsl2/docker-ai-stack)
+- [ ] Part of [self-hosted-ai-stack](https://github.com/hwdsl2/self-hosted-ai-stack)
 
 **To Reproduce**
 Steps to reproduce the behavior:

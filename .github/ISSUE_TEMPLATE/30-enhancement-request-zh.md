@@ -23,7 +23,7 @@ assignees: ''
 - [ ] 运行配置或环境变量
 - [ ] API 行为
 - [ ] 辅助脚本或管理命令
-- [ ] Docker Compose / docker-ai-stack 集成
+- [ ] Docker Compose / self-hosted-ai-stack 集成
 - [ ] 文档
 
 **当前解决方法**

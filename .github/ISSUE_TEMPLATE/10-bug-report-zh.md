@@ -21,7 +21,7 @@ assignees: ''
 
 **部署场景**
 - [ ] 独立容器
-- [ ] 属于 [docker-ai-stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-zh.md)
+- [ ] 属于 [self-hosted-ai-stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)
 
 **重现步骤**
 重现该问题的步骤：

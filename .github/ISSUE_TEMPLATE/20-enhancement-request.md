@@ -23,7 +23,7 @@ What problem would this solve, or what workflow would it improve?
 - [ ] Runtime configuration or env vars
 - [ ] API behavior
 - [ ] Helper script or management command
-- [ ] Docker Compose / docker-ai-stack integration
+- [ ] Docker Compose / self-hosted-ai-stack integration
 - [ ] Documentation
 
 **Current workaround**

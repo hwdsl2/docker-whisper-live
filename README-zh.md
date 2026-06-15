@@ -4,7 +4,7 @@
 
 [![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-zh.md) 的一部分 ─ 一条命令部署完整的自托管 AI 技术栈。
+[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分 ─ 一条命令部署完整的自托管 AI 技术栈。
 
 使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 WebSocket 流式传输，以及用于文件转录的 OpenAI 兼容 REST API。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
 
@@ -24,7 +24,7 @@
 
 **另提供：**
 
-- AI 套件：[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-zh.md)
+- AI 套件：[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)
 - 在线试用：[在 Colab 中打开](https://vpnsetup.net/whisper-live-notebook)——无需 Docker 或安装
 - 相关 AI 服务：[Whisper（批量 STT）](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
 
@@ -633,7 +633,7 @@ WhisperLive（实时 STT）、Embeddings、LiteLLM、Kokoro (TTS)、Ollama (LLM)
 | **[MCP 网关](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)** | 将 AI 服务作为 MCP 工具暴露给 AI 助手（Claude、Cursor 等） | `3000` |
 | **[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)** | 将文档（PDF、DOCX 等）转换为结构化文本/Markdown | `5001` |
 
-**另请参阅：[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-zh.md)** — 一条命令即可部署完整技术栈，提供现成的配置和流水线示例。
+**另请参阅：[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)** — 一条命令即可部署完整技术栈，提供现成的配置和流水线示例。
 
 ## 技术细节
 
