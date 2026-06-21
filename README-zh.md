@@ -165,7 +165,7 @@ docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 
 ## 环境变量
 
-所有变量均为可选。如未设置，将自动使用安全的默认值。
+所有变量均为可选。挂载 `/var/lib/whisper-live` 数据卷的新安装会自动生成 API 密钥。没有密钥的既有安装会保持开放以兼容旧行为。
 
 此 Docker 镜像使用以下变量，可在 `env` 文件中声明（参见[示例](whisper-live.env.example)）：
 
@@ -179,6 +179,7 @@ docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 | `WHISPERLIVE_MAX_CONNECTION_TIME` | WebSocket 最大连接时长（秒）。超过此时长的客户端将被自动断开。 | `600` |
 | `WHISPERLIVE_USE_VAD` | 启用语音活动检测。设为 `true` 时自动检测并跳过静音段。设为 `false` 持续处理所有音频。 | `true` |
 | `WHISPERLIVE_THREADS` | 推理使用的 CPU 线程数。设为物理核心数可获得最佳延迟。 | `2` |
+| `WHISPERLIVE_API_KEY` | 可选 API 密钥。新持久化安装会自动生成。REST 请求须包含 `Authorization: Bearer <key>`；WebSocket 客户端可使用 `?token=<key>`。显式设置为空可禁用认证。 | 新持久化安装自动生成 |
 | `WHISPERLIVE_LOG_LEVEL` | 日志级别：`DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`。 | `INFO` |
 | `WHISPERLIVE_LOCAL_ONLY` | 设为任意非空值（如 `true`）时，禁止所有 HuggingFace 模型下载。适用于预先缓存模型的离线或隔离网络部署。 | *（未设置）* |
 
@@ -491,7 +492,7 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
 
 如果你的 WhisperLive 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。WhisperLive 对 CPU/GPU 资源消耗较大，未做防护的接口可能被滥用，浪费你的计算资源。
 
-**1. 在代理处添加身份验证。** 服务器没有内置 API 密钥。对于面向公网的部署，请在反向代理层添加 Bearer 令牌或基本身份验证——请参阅[使用反向代理](#使用反向代理)章节中的"在代理层添加身份验证"展开内容。将 WebSocket 端口（`9090`）绑定到 `127.0.0.1`，使其只能通过代理访问。
+**1. 使用 API 密钥。** 挂载 `/var/lib/whisper-live` 数据卷的新安装会自动生成 API 密钥。可用 `docker exec whisper-live whisper_live_manage --showkey` 查看；脚本中可用 `docker exec whisper-live whisper_live_manage --getkey`。没有密钥的既有安装会保持开放以兼容旧行为；也可以在 `env` 文件中设置 `WHISPERLIVE_API_KEY` 手动启用认证。REST 客户端需发送 `Authorization: Bearer <key>`；WebSocket 客户端可发送相同请求头或在 URL 中添加 `?token=<key>`。
 
 **2. 在反向代理后面时绑定到 localhost。** 将 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`（或在 `docker-compose.yml` 中将两个端口映射改为各自的 `127.0.0.1:` 等效形式），使未加密端口无法从主机外部直接访问。
 
@@ -561,9 +562,9 @@ server {
 > **重要：** WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 请求头。若缺少这些配置，实时流式传输将无法通过 nginx 正常工作。
 
 <details>
-<summary><strong>在代理层添加身份验证</strong></summary>
+<summary><strong>在代理层添加额外身份验证</strong></summary>
 
-服务器本身不强制要求 API 密钥验证。对于面向互联网的部署，可以在反向代理层添加 Bearer 令牌或基本身份验证。使用 Caddy 的示例（`basicauth` 保护 REST API）：
+服务器支持通过 `WHISPERLIVE_API_KEY` 进行原生 API 密钥验证。对于面向互联网的部署，也可以在反向代理层添加 Bearer 令牌或基本身份验证作为纵深防护。使用 Caddy 的示例（`basicauth` 保护 REST API）：
 
 ```
 whisper-live.example.com {

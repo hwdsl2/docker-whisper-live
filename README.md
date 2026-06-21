@@ -163,7 +163,7 @@ Supported platforms: `linux/amd64` and `linux/arm64`. The `:cuda` tag supports `
 
 ## Environment variables
 
-All variables are optional. If not set, secure defaults are used automatically.
+All variables are optional. Fresh installs with a mounted `/var/lib/whisper-live` volume auto-generate an API key. Existing installs without a key remain open for backward compatibility.
 
 This Docker image uses the following variables, that can be declared in an `env` file (see [example](whisper-live.env.example)):
 
@@ -178,6 +178,7 @@ This Docker image uses the following variables, that can be declared in an `env`
 | `WHISPERLIVE_USE_VAD` | Voice Activity Detection default. For the `faster_whisper` backend, VAD is controlled per WebSocket client via the connection handshake `use_vad` field. | `true` |
 | `WHISPERLIVE_THREADS` | CPU threads for inference. Set to the number of physical cores for best latency. | `2` |
 | `WHISPERLIVE_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. | `INFO` |
+| `WHISPERLIVE_API_KEY` | Optional API key. Fresh persistent installs auto-generate one. REST requests must include `Authorization: Bearer <key>`; WebSocket clients can use `?token=<key>`. Set explicitly empty to disable authentication. | Auto-generated for fresh persistent installs |
 | `WHISPERLIVE_LOCAL_ONLY` | When set to any non-empty value (e.g. `true`), disables all HuggingFace model downloads. For offline or air-gapped deployments with pre-cached models. | *(not set)* |
 
 **Note:** In your `env` file, you may enclose values in single quotes, e.g. `VAR='value'`. Do not add spaces around `=`. If you change `WHISPERLIVE_PORT` or `WHISPERLIVE_REST_PORT`, update the `-p` flags in the `docker run` command accordingly.
@@ -489,7 +490,7 @@ RAM figures are approximate and reflect INT8 quantization (default). Models are 
 
 If your WhisperLive server is reachable from the public internet — even briefly — apply at minimum these protections. WhisperLive is CPU/GPU-intensive, so an unprotected endpoint can be abused to burn your compute resources.
 
-**1. Add authentication at the proxy.** The server has no built-in API key. For internet-facing deployments, add Bearer token or basic auth at the reverse proxy layer — see the "Adding authentication at the proxy layer" collapsible in the [Using a reverse proxy](#using-a-reverse-proxy) section. Keep the WebSocket port (`9090`) bound to `127.0.0.1` and accessible only through the proxy.
+**1. Use an API key.** Fresh installs with a mounted `/var/lib/whisper-live` volume auto-generate an API key. Display it with `docker exec whisper-live whisper_live_manage --showkey`, or use `docker exec whisper-live whisper_live_manage --getkey` in scripts. Existing installs without a key remain open for backward compatibility; set `WHISPERLIVE_API_KEY` in your `env` file to enable authentication manually. REST clients must send `Authorization: Bearer <key>`; WebSocket clients can send the same header or add `?token=<key>` to the URL.
 
 **2. Bind to localhost when fronted by a reverse proxy.** Replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` (or change both port mappings to their `127.0.0.1:` equivalents in `docker-compose.yml`) so the unencrypted ports are not reachable directly from outside the host.
 
@@ -559,9 +560,9 @@ server {
 > **Important:** WebSocket proxying requires `proxy_http_version 1.1` and the `Upgrade`/`Connection` headers. Without these, real-time streaming will not work through nginx.
 
 <details>
-<summary><strong>Adding authentication at the proxy layer</strong></summary>
+<summary><strong>Adding extra authentication at the proxy layer</strong></summary>
 
-The server itself does not enforce API key authentication. For internet-facing deployments, you can add Bearer token or basic auth at the reverse proxy layer. Example with Caddy (`basicauth` protects the REST API):
+The server supports native API-key authentication via `WHISPERLIVE_API_KEY`. For internet-facing deployments, you can also add Bearer token or basic auth at the reverse proxy layer as defense in depth. Example with Caddy (`basicauth` protects the REST API):
 
 ```
 whisper-live.example.com {
