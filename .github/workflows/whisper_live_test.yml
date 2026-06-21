@@ -8,7 +8,7 @@ jobs:
     if: github.repository_owner == 'hwdsl2'
     strategy:
       matrix:
-        test_id: [no-env, with-env]
+        test_id: [no-env, with-env, with-key, empty-key, existing-no-key]
       fail-fast: false
     env:
       TEST_ID: ${{ matrix.test_id }}
@@ -32,6 +32,14 @@ jobs:
 
           docker build -t whisper-live-test .
 
+          if [ "$TEST_ID" = "existing-no-key" ]; then
+            docker volume create whisper-live-test-data
+            docker run --rm --entrypoint sh \
+              -v whisper-live-test-data:/data \
+              whisper-live-test \
+              -c 'printf "%s" "existing" > /data/.server_addr'
+          fi
+
           if [ "$TEST_ID" = "with-env" ]; then
             docker run \
               --name "$TEST_ID" \
@@ -51,12 +59,44 @@ jobs:
               -p 9090:9090/tcp \
               -p 8000:8000/tcp \
               -d whisper-live-test
+          elif [ "$TEST_ID" = "with-key" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v whisper-live-test-data:/var/lib/whisper-live \
+              -e WHISPERLIVE_MODEL=tiny \
+              -e WHISPERLIVE_API_KEY=test-whisperlive-key \
+              -p 9090:9090/tcp \
+              -p 8000:8000/tcp \
+              -d whisper-live-test
+          elif [ "$TEST_ID" = "empty-key" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v whisper-live-test-data:/var/lib/whisper-live \
+              -e WHISPERLIVE_MODEL=tiny \
+              -e WHISPERLIVE_API_KEY= \
+              -p 9090:9090/tcp \
+              -p 8000:8000/tcp \
+              -d whisper-live-test
+          elif [ "$TEST_ID" = "existing-no-key" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v whisper-live-test-data:/var/lib/whisper-live \
+              -e WHISPERLIVE_MODEL=tiny \
+              -p 9090:9090/tcp \
+              -p 8000:8000/tcp \
+              -d whisper-live-test
           fi
 
           # Wait for server to be ready (up to 300 seconds for model download)
+          # /docs returns 200 (no auth) or 401 (auth enabled) once the server is up.
           i=0
           while [ "$i" -lt 300 ]; do
-            if docker exec "$TEST_ID" curl -sf --max-time 2 http://127.0.0.1:8000/docs >/dev/null 2>&1; then
+            http_code=$(docker exec "$TEST_ID" curl -s -o /dev/null -w '%{http_code}' --max-time 2 \
+                http://127.0.0.1:8000/docs 2>/dev/null || true)
+            if [ "$http_code" = "200" ] || [ "$http_code" = "401" ]; then
               break
             fi
             sleep 1
@@ -65,12 +105,46 @@ jobs:
 
           docker ps | grep "$TEST_ID"
           docker logs "$TEST_ID"
+          if [ "$TEST_ID" = "existing-no-key" ]; then
+            docker logs "$TEST_ID" 2>&1 | grep -q 'Preserving no-auth behavior for backward compatibility'
+          fi
+
+          # Build optional auth header args
+          whisper_live_curl_args=()
+          if [ "$TEST_ID" = "with-key" ]; then
+            whisper_live_curl_args=(-H "Authorization: Bearer test-whisperlive-key")
+          elif [ "$TEST_ID" = "empty-key" ] || [ "$TEST_ID" = "existing-no-key" ]; then
+            whisper_live_key=$(docker exec "$TEST_ID" whisper_live_manage --getkey 2>/dev/null || true)
+            [ -z "$whisper_live_key" ] || { echo "Expected no WhisperLive API key, got $whisper_live_key"; exit 1; }
+            docker exec "$TEST_ID" test ! -f /var/lib/whisper-live/.api_key
+            docker exec "$TEST_ID" test ! -f /var/lib/whisper-live/.auto_api_key_created
+          else
+            whisper_live_key=$(docker exec "$TEST_ID" whisper_live_manage --getkey)
+            [ -n "$whisper_live_key" ] || { echo "Generated WhisperLive API key not found"; exit 1; }
+            docker exec "$TEST_ID" test -f /var/lib/whisper-live/.auto_api_key_created
+            whisper_live_curl_args=(-H "Authorization: Bearer $whisper_live_key")
+          fi
 
           # Verify REST API docs endpoint
-          docker exec "$TEST_ID" curl -sf --max-time 5 http://127.0.0.1:8000/docs
+          docker exec "$TEST_ID" curl -sf --max-time 5 \
+            "${whisper_live_curl_args[@]}" \
+            http://127.0.0.1:8000/docs
+
+          if [ "${#whisper_live_curl_args[@]}" -gt 0 ]; then
+            # Verify auth enforcement
+            http_code=$(curl -s -o /dev/null -w '%{http_code}' \
+              http://127.0.0.1:8000/docs 2>/dev/null || true)
+            [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
+          else
+            # Explicit empty keys and existing no-key volumes preserve no-auth behavior.
+            curl -sf --max-time 5 http://127.0.0.1:8000/docs >/dev/null
+          fi
 
           # Test whisper_live_manage commands
           docker exec "$TEST_ID" whisper_live_manage --showinfo
+          if [ "${#whisper_live_curl_args[@]}" -gt 0 ]; then
+            docker exec "$TEST_ID" whisper_live_manage --showkey
+          fi
           docker exec "$TEST_ID" whisper_live_manage --listmodels
 
           # Generate a minimal test audio file and test the transcription endpoint
@@ -86,6 +160,7 @@ jobs:
           i=0
           while [ "$i" -lt 300 ]; do
             if curl -sf --max-time 30 http://127.0.0.1:8000/v1/audio/transcriptions \
+                "${whisper_live_curl_args[@]}" \
                 -F file=@/tmp/test.wav -F model=whisper-1 \
                 | grep -q '"text"'; then
               break
@@ -105,7 +180,9 @@ jobs:
           # Wait for server to come back (up to 120 seconds)
           i=0
           while [ "$i" -lt 120 ]; do
-            if docker exec "$TEST_ID" curl -sf --max-time 2 http://127.0.0.1:8000/docs >/dev/null 2>&1; then
+            if docker exec "$TEST_ID" curl -sf --max-time 2 \
+                "${whisper_live_curl_args[@]}" \
+                http://127.0.0.1:8000/docs >/dev/null 2>&1; then
               break
             fi
             sleep 1
@@ -116,7 +193,9 @@ jobs:
           docker logs "$TEST_ID"
 
           # Verify server is ready after restart
-          docker exec "$TEST_ID" curl -sf --max-time 5 http://127.0.0.1:8000/docs
+          docker exec "$TEST_ID" curl -sf --max-time 5 \
+            "${whisper_live_curl_args[@]}" \
+            http://127.0.0.1:8000/docs
 
           exit 0
       - name: Clear
