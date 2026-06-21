@@ -364,7 +364,7 @@ ws.onmessage = (event) => {
 
 ## REST API
 
-REST API на порту `8000` полностью совместим с [эндпоинтом OpenAI для транскрибирования аудио](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Любое приложение, уже вызывающее `https://api.openai.com/v1/audio/transcriptions`, может переключиться на самостоятельно размещённый сервер, установив:
+REST API на порту `8000` совместим с [эндпоинтом OpenAI для транскрибирования аудио](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Любое приложение, уже вызывающее `https://api.openai.com/v1/audio/transcriptions`, может переключиться на самостоятельно размещённый сервер, установив:
 
 ```
 OPENAI_BASE_URL=http://ip_вашего_сервера:8000

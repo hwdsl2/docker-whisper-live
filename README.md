@@ -366,7 +366,7 @@ ws.onmessage = (event) => {
 
 ## REST API reference
 
-The REST API at port `8000` is fully compatible with [OpenAI's audio transcription endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Any application already calling `https://api.openai.com/v1/audio/transcriptions` can switch to self-hosted by setting:
+The REST API at port `8000` is compatible with [OpenAI's audio transcription endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Any application already calling `https://api.openai.com/v1/audio/transcriptions` can switch to self-hosted by setting:
 
 ```
 OPENAI_BASE_URL=http://your_server_ip:8000
