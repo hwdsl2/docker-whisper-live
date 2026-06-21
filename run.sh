@@ -41,6 +41,8 @@ if [ ! -f "/.dockerenv" ] && [ ! -f "/run/.containerenv" ] \
   exiterr "This script ONLY runs in a container (e.g. Docker, Podman)."
 fi
 
+WHISPERLIVE_API_KEY_WAS_SET=${WHISPERLIVE_API_KEY+x}
+
 # Read and sanitize environment variables
 WHISPERLIVE_MODEL=$(nospaces "$WHISPERLIVE_MODEL")
 WHISPERLIVE_MODEL=$(noquotes "$WHISPERLIVE_MODEL")
@@ -60,6 +62,8 @@ WHISPERLIVE_THREADS=$(nospaces "$WHISPERLIVE_THREADS")
 WHISPERLIVE_THREADS=$(noquotes "$WHISPERLIVE_THREADS")
 WHISPERLIVE_LOG_LEVEL=$(nospaces "$WHISPERLIVE_LOG_LEVEL")
 WHISPERLIVE_LOG_LEVEL=$(noquotes "$WHISPERLIVE_LOG_LEVEL")
+WHISPERLIVE_API_KEY=$(nospaces "$WHISPERLIVE_API_KEY")
+WHISPERLIVE_API_KEY=$(noquotes "$WHISPERLIVE_API_KEY")
 WHISPERLIVE_LOCAL_ONLY=$(nospaces "$WHISPERLIVE_LOCAL_ONLY")
 WHISPERLIVE_LOCAL_ONLY=$(noquotes "$WHISPERLIVE_LOCAL_ONLY")
 
@@ -118,6 +122,38 @@ fi
 
 mkdir -p /var/lib/whisper-live
 
+DATA_DIR="/var/lib/whisper-live"
+API_KEY_FILE="${DATA_DIR}/.api_key"
+AUTH_ENABLED_FILE="${DATA_DIR}/.auth_enabled"
+AUTO_API_KEY_MARKER="${DATA_DIR}/.auto_api_key_created"
+data_mounted=false
+data_existing=false
+
+if grep -q " ${DATA_DIR} " /proc/mounts 2>/dev/null; then
+  data_mounted=true
+fi
+if $data_mounted && find "$DATA_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null | grep -q .; then
+  data_existing=true
+fi
+
+if [ -n "$WHISPERLIVE_API_KEY" ]; then
+  printf '%s' "$WHISPERLIVE_API_KEY" > "$API_KEY_FILE"
+  chmod 600 "$API_KEY_FILE"
+elif [ -z "$WHISPERLIVE_API_KEY_WAS_SET" ] && [ -f "$API_KEY_FILE" ]; then
+  WHISPERLIVE_API_KEY=$(cat "$API_KEY_FILE")
+elif [ -z "$WHISPERLIVE_API_KEY_WAS_SET" ] && $data_mounted && ! $data_existing; then
+  WHISPERLIVE_API_KEY="whisperlive-$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n' | head -c 48)"
+  printf '%s' "$WHISPERLIVE_API_KEY" > "$API_KEY_FILE"
+  chmod 600 "$API_KEY_FILE"
+  printf '%s\n' "true" > "$AUTO_API_KEY_MARKER"
+  chmod 600 "$AUTO_API_KEY_MARKER"
+fi
+if [ -n "$WHISPERLIVE_API_KEY" ]; then
+  printf '%s' "1" > "$AUTH_ENABLED_FILE"
+else
+  printf '%s' "0" > "$AUTH_ENABLED_FILE"
+fi
+
 # Determine server address for display
 public_ip=$(curl -s --max-time 10 http://ipv4.icanhazip.com 2>/dev/null || true)
 check_ip "$public_ip" || public_ip=$(curl -s --max-time 10 http://ip1.dynupdate.no-ip.com 2>/dev/null || true)
@@ -137,6 +173,7 @@ export WHISPERLIVE_MAX_CONNECTION_TIME
 export WHISPERLIVE_USE_VAD
 export WHISPERLIVE_THREADS
 export WHISPERLIVE_LOG_LEVEL
+export WHISPERLIVE_API_KEY
 export WHISPERLIVE_LOCAL_ONLY
 # Point faster-whisper / HuggingFace Hub at the persistent Docker volume
 export HF_HOME=/var/lib/whisper-live
@@ -161,6 +198,15 @@ if ! grep -q " /var/lib/whisper-live " /proc/mounts 2>/dev/null; then
   echo "Note: /var/lib/whisper-live is not mounted. Model files will be lost on"
   echo "      container removal. Mount a Docker volume at /var/lib/whisper-live"
   echo "      to persist the downloaded model across container restarts."
+  if [ -z "$WHISPERLIVE_API_KEY" ] && [ -z "$WHISPERLIVE_API_KEY_WAS_SET" ]; then
+    echo "      API key authentication was not auto-enabled because the"
+    echo "      data directory is not persistent."
+  fi
+elif [ -z "$WHISPERLIVE_API_KEY" ] && [ -z "$WHISPERLIVE_API_KEY_WAS_SET" ] && $data_existing; then
+  echo
+  echo "Warning: Existing WhisperLive data was found but no API key is configured."
+  echo "         Preserving no-auth behavior for backward compatibility."
+  echo "         Set WHISPERLIVE_API_KEY to enable authentication."
 fi
 
 echo
@@ -245,6 +291,7 @@ server.run(
     cache_path=os.environ.get('HF_HOME', '/var/lib/whisper-live'),
     rest_port=int(os.environ['WHISPERLIVE_REST_PORT']),
     enable_rest=True,
+    api_key=os.environ.get('WHISPERLIVE_API_KEY') or None,
 )
 " &
 SERVER_PID=$!
@@ -260,7 +307,12 @@ wait_for_server() {
       return 1
     fi
     # Use curl to probe the REST API docs endpoint (FastAPI always serves /docs)
-    if curl -sf --max-time 2 "http://127.0.0.1:${WHISPERLIVE_REST_PORT}/docs" >/dev/null 2>&1; then
+    if [ -n "$WHISPERLIVE_API_KEY" ]; then
+      if curl -sf --max-time 2 -H "Authorization: Bearer ${WHISPERLIVE_API_KEY}" \
+          "http://127.0.0.1:${WHISPERLIVE_REST_PORT}/docs" >/dev/null 2>&1; then
+        return 0
+      fi
+    elif curl -sf --max-time 2 "http://127.0.0.1:${WHISPERLIVE_REST_PORT}/docs" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -289,12 +341,24 @@ echo " REST API:       http://${server_addr}:${WHISPERLIVE_REST_PORT}"
 echo "==========================================================="
 echo
 echo "Connect a client (WebSocket streaming):"
-echo "  ws://${server_addr}:${WHISPERLIVE_PORT}"
+if [ -n "$WHISPERLIVE_API_KEY" ]; then
+  echo "  ws://${server_addr}:${WHISPERLIVE_PORT}?token=\$WHISPERLIVE_API_KEY"
+else
+  echo "  ws://${server_addr}:${WHISPERLIVE_PORT}"
+fi
 echo
 echo "Transcribe a file (REST API):"
 echo "  curl http://${server_addr}:${WHISPERLIVE_REST_PORT}/v1/audio/transcriptions \\"
+if [ -n "$WHISPERLIVE_API_KEY" ]; then
+  echo "    -H \"Authorization: Bearer \$WHISPERLIVE_API_KEY\" \\"
+fi
 echo "    -F file=@audio.mp3 -F model=whisper-1"
 echo
+if [ -n "$WHISPERLIVE_API_KEY" ]; then
+  echo "API key authentication is enabled."
+  echo "WebSocket auth:   add ?token=\$WHISPERLIVE_API_KEY to the URL"
+  echo
+fi
 echo "Interactive API docs: http://${server_addr}:${WHISPERLIVE_REST_PORT}/docs"
 echo
 echo "To set up HTTPS, see: Using a reverse proxy"

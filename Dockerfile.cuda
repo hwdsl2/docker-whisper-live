@@ -19,7 +19,7 @@ RUN set -x \
     && python3 -m venv /opt/venv \
     && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu129 \
     && pip install --no-cache-dir \
-         whisper-live \
+         "whisper-live>=0.9.0" \
          faster-whisper \
          fastapi \
          uvicorn \

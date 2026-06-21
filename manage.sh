@@ -14,6 +14,8 @@ PORT_FILE="${WHISPERLIVE_DATA}/.ws_port"
 REST_PORT_FILE="${WHISPERLIVE_DATA}/.rest_port"
 MODEL_FILE="${WHISPERLIVE_DATA}/.model"
 SERVER_ADDR_FILE="${WHISPERLIVE_DATA}/.server_addr"
+API_KEY_FILE="${WHISPERLIVE_DATA}/.api_key"
+AUTH_ENABLED_FILE="${WHISPERLIVE_DATA}/.auth_enabled"
 
 exiterr() { echo "Error: $1" >&2; exit 1; }
 
@@ -31,6 +33,8 @@ Usage: docker exec <container> whisper_live_manage [options]
 
 Options:
   --showinfo                           show server info (model, endpoints)
+  --showkey                            show the API key, if configured
+  --getkey                             output the API key (machine-readable, no decoration)
   --listmodels                         list available Whisper model names and sizes
   --downloadmodel <model>              pre-download a model to the cache volume
 
@@ -46,6 +50,8 @@ delay on the next container start.
 
 Examples:
   docker exec whisper-live whisper_live_manage --showinfo
+  docker exec whisper-live whisper_live_manage --showkey
+  docker exec whisper-live whisper_live_manage --getkey
   docker exec whisper-live whisper_live_manage --listmodels
   docker exec whisper-live whisper_live_manage --downloadmodel large-v3
   docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
@@ -92,16 +98,40 @@ load_config() {
   else
     SERVER_ADDR="<server ip>"
   fi
+
+  if [ -f "$AUTH_ENABLED_FILE" ]; then
+    WHISPERLIVE_AUTH_ENABLED=$(cat "$AUTH_ENABLED_FILE")
+  fi
+
+  if [ "$WHISPERLIVE_AUTH_ENABLED" != 0 ] && [ -z "$WHISPERLIVE_API_KEY" ] && [ -f "$API_KEY_FILE" ]; then
+    WHISPERLIVE_API_KEY=$(cat "$API_KEY_FILE")
+  fi
+
+  if [ -z "$WHISPERLIVE_AUTH_ENABLED" ]; then
+    if [ -n "$WHISPERLIVE_API_KEY" ]; then
+      WHISPERLIVE_AUTH_ENABLED=1
+    else
+      WHISPERLIVE_AUTH_ENABLED=0
+    fi
+  fi
 }
 
 check_server() {
-  if ! curl -sf --max-time 5 "http://127.0.0.1:${WHISPERLIVE_REST_PORT}/docs" >/dev/null 2>&1; then
-    exiterr "WhisperLive server is not responding on REST port ${WHISPERLIVE_REST_PORT}. Is the container fully started?"
+  if [ -n "$WHISPERLIVE_API_KEY" ]; then
+    if curl -sf --max-time 5 -H "Authorization: Bearer ${WHISPERLIVE_API_KEY}" \
+        "http://127.0.0.1:${WHISPERLIVE_REST_PORT}/docs" >/dev/null 2>&1; then
+      return 0
+    fi
+  elif curl -sf --max-time 5 "http://127.0.0.1:${WHISPERLIVE_REST_PORT}/docs" >/dev/null 2>&1; then
+    return 0
   fi
+  exiterr "WhisperLive server is not responding on REST port ${WHISPERLIVE_REST_PORT}. Is the container fully started?"
 }
 
 parse_args() {
   show_info=0
+  show_key=0
+  get_key=0
   list_models=0
   download_model=0
   model_to_download=""
@@ -110,6 +140,14 @@ parse_args() {
     case "$1" in
       --showinfo)
         show_info=1
+        shift
+        ;;
+      --showkey)
+        show_key=1
+        shift
+        ;;
+      --getkey)
+        get_key=1
         shift
         ;;
       --listmodels)
@@ -134,7 +172,7 @@ parse_args() {
 
 check_args() {
   local action_count
-  action_count=$((show_info + list_models + download_model))
+  action_count=$((show_info + show_key + get_key + list_models + download_model))
 
   if [ "$action_count" -eq 0 ]; then
     show_usage
@@ -148,6 +186,47 @@ check_args() {
   fi
 }
 
+do_show_key() {
+  if [ "$WHISPERLIVE_AUTH_ENABLED" != 1 ]; then
+    exiterr "API key authentication is disabled for this container."
+  fi
+
+  if [ -z "$WHISPERLIVE_API_KEY" ]; then
+    if [ -f "$API_KEY_FILE" ]; then
+      WHISPERLIVE_API_KEY=$(cat "$API_KEY_FILE")
+    else
+      exiterr "API key not found. Authentication may be disabled for this container."
+    fi
+  fi
+
+  echo
+  echo "==========================================================="
+  echo " WhisperLive API key"
+  echo "==========================================================="
+  echo "${WHISPERLIVE_API_KEY}"
+  echo "==========================================================="
+  echo
+  echo "REST API:  -H \"Authorization: Bearer ${WHISPERLIVE_API_KEY}\""
+  echo "WebSocket: ws://<server-ip>:${WHISPERLIVE_PORT}?token=${WHISPERLIVE_API_KEY}"
+  echo
+}
+
+do_get_key() {
+  if [ "$WHISPERLIVE_AUTH_ENABLED" != 1 ]; then
+    exit 1
+  fi
+
+  if [ -z "$WHISPERLIVE_API_KEY" ]; then
+    if [ -f "$API_KEY_FILE" ]; then
+      WHISPERLIVE_API_KEY=$(cat "$API_KEY_FILE")
+    else
+      exit 1
+    fi
+  fi
+
+  printf '%s' "$WHISPERLIVE_API_KEY"
+}
+
 do_show_info() {
   echo
   echo "==========================================================="
@@ -159,7 +238,11 @@ do_show_info() {
   echo "==========================================================="
   echo
   echo "WebSocket streaming endpoint:"
-  echo "  ws://${SERVER_ADDR}:${WHISPERLIVE_PORT}"
+  if [ "$WHISPERLIVE_AUTH_ENABLED" = 1 ]; then
+    echo "  ws://${SERVER_ADDR}:${WHISPERLIVE_PORT}?token=<api-key>"
+  else
+    echo "  ws://${SERVER_ADDR}:${WHISPERLIVE_PORT}"
+  fi
   echo
   echo "REST API endpoints:"
   echo "  POST http://${SERVER_ADDR}:${WHISPERLIVE_REST_PORT}/v1/audio/transcriptions"
@@ -167,7 +250,14 @@ do_show_info() {
   echo
   echo "Example file transcription (REST):"
   echo "  curl http://${SERVER_ADDR}:${WHISPERLIVE_REST_PORT}/v1/audio/transcriptions \\"
+  if [ "$WHISPERLIVE_AUTH_ENABLED" = 1 ]; then
+    echo "    -H \"Authorization: Bearer <api-key>\" \\"
+  fi
   echo "    -F file=@audio.mp3 -F model=whisper-1"
+  if [ "$WHISPERLIVE_AUTH_ENABLED" = 1 ]; then
+    echo
+    echo "Use '--showkey' to display the API key."
+  fi
   echo
   echo "To change the active model:"
   echo "  1. Pre-download: docker exec <container> whisper_live_manage --downloadmodel <name>"
@@ -271,6 +361,16 @@ check_args
 if [ "$show_info" = 1 ]; then
   check_server
   do_show_info
+  exit 0
+fi
+
+if [ "$show_key" = 1 ]; then
+  do_show_key
+  exit 0
+fi
+
+if [ "$get_key" = 1 ]; then
+  do_get_key
   exit 0
 fi
 

@@ -23,7 +23,7 @@ RUN set -x \
          pip install --no-cache-dir torch; \
        fi \
     && pip install --no-cache-dir \
-         whisper-live \
+         "whisper-live>=0.9.0" \
          faster-whisper \
          fastapi \
          uvicorn \
