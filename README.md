@@ -28,8 +28,6 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - Try it online: [Open in Colab](https://vpnsetup.net/whisper-live-notebook) — no Docker or installation required
 - Related AI services: [Whisper (batch STT)](https://github.com/hwdsl2/docker-whisper), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
-**Tip:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, Docling, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server.
-
 ## Community
 
 - 📬 [Subscribe for project updates](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai) (1–2 emails/month) — get free AI and VPN deployment guides (PDF)
@@ -620,19 +618,9 @@ Your downloaded models are preserved in the `whisper-live-data` volume.
 
 ## Using with other AI services
 
-The WhisperLive (real-time STT), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM), Docling, and MCP Gateway images can be combined to build a complete, self-hosted AI stack on your own server — from live voice I/O to RAG-powered question answering. WhisperLive, Kokoro, and Embeddings run fully locally. Ollama runs all LLM inference locally, so no data is sent to third parties. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
+WhisperLive can be used as the real-time speech-to-text service in a broader self-hosted AI setup.
 
-| Service | Role | Default port |
-|---|---|---|
-| **[WhisperLive (real-time STT)](https://github.com/hwdsl2/docker-whisper-live)** | Real-time WebSocket streaming transcription for live audio | `9090` (WS), `8000` (REST) |
-| **[Embeddings](https://github.com/hwdsl2/docker-embeddings)** | Converts text to vectors for semantic search and RAG | `8000` |
-| **[LiteLLM](https://github.com/hwdsl2/docker-litellm)** | AI gateway — routes requests to Ollama, OpenAI, Anthropic, and 100+ providers | `4000` |
-| **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro)** | Converts text to natural-sounding speech | `8880` |
-| **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama)** | Runs local LLM models (llama3, qwen, mistral, etc.) | `11434` |
-| **[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)** | Exposes AI services as MCP tools for AI assistants (Claude, Cursor, etc.) | `3000` |
-| **[Docling](https://github.com/hwdsl2/docker-docling)** | Converts documents (PDF, DOCX, etc.) to structured text/Markdown | `5001` |
-
-**See also: [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack)** — deploy the full stack with a single command, with ready-made configurations and pipeline examples.
+For full and lightweight Docker Compose stacks, manual `docker run` examples, and voice/RAG/MCP pipeline examples with Kokoro, Embeddings, LiteLLM, Ollama, Docling, and MCP Gateway, see [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack).
 
 ## Technical details
 

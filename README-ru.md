@@ -28,8 +28,6 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - Попробовать онлайн: [Открыть в Colab](https://vpnsetup.net/whisper-live-notebook) — Docker и установка не требуются
 - Связанные AI-сервисы: [Whisper (пакетный STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
-**Совет:** WhisperLive, Kokoro, Embeddings, LiteLLM, Ollama, Docling и MCP-шлюз можно [использовать совместно](#использование-с-другими-ai-сервисами) для построения полного self-hosted AI-стека на собственном сервере.
-
 ## Сообщество
 
 - 📬 [Подписаться на обновления проектов](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai-ru) (1–2 письма в месяц) — получить бесплатные руководства по развёртыванию AI и VPN (PDF, на английском)
@@ -585,19 +583,9 @@ docker rm -f whisper-live
 
 ## Использование с другими AI-сервисами
 
-WhisperLive (STT в реальном времени), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM), Docling и MCP-шлюз можно объединить для построения полного self-hosted AI-стека на собственном сервере — от голосового ввода/вывода в реальном времени до RAG-поиска с ответами. WhisperLive, Kokoro и Embeddings работают полностью локально. Ollama выполняет весь инференс LLM локально, данные не отправляются третьим сторонам. Если вы настроите LiteLLM с внешними провайдерами (например, OpenAI, Anthropic), ваши данные будут переданы этим провайдерам для обработки.
+WhisperLive можно использовать как службу распознавания речи в реальном времени в более широком self-hosted AI-стеке.
 
-| Сервис | Назначение | Порт по умолчанию |
-|---|---|---|
-| **[WhisperLive (STT в реальном времени)](https://github.com/hwdsl2/docker-whisper-live/blob/main/README-ru.md)** | Потоковое транскрибирование через WebSocket | `9090` (WS), `8000` (REST) |
-| **[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md)** | Преобразование текста в векторы для семантического поиска и RAG | `8000` |
-| **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)** | AI-шлюз — маршрутизация запросов к OpenAI, Anthropic, Ollama и 100+ другим провайдерам | `4000` |
-| **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md)** | Преобразование текста в естественную речь | `8880` |
-| **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md)** | Запускает локальные LLM-модели (llama3, qwen, mistral и др.) | `11434` |
-| **[MCP-шлюз](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)** | Предоставляет сервисы ИИ как MCP-инструменты для ИИ-ассистентов (Claude, Cursor и др.) | `3000` |
-| **[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md)** | Конвертирует документы (PDF, DOCX и др.) в структурированный текст/Markdown | `5001` |
-
-**См. также: [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md)** — разверните полный стек одной командой, с готовыми конфигурациями и примерами конвейеров.
+Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с Kokoro, Embeddings, LiteLLM, Ollama, Docling и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
 
 ## Техническая информация
 
