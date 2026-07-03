@@ -11,6 +11,9 @@ on:
       should_update:
         value: ${{ jobs.check_update.outputs.should_update }}
 
+permissions:
+  contents: read
+
 jobs:
   check_update:
     runs-on: ubuntu-24.04
@@ -21,6 +24,9 @@ jobs:
       should_test: ${{ steps.check.outputs.should_test }}
       should_update: ${{ steps.check.outputs.should_update }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Cache
         uses: actions/cache@v6
         with:
@@ -32,16 +38,46 @@ jobs:
           key: ${{ secrets.CACHE_NAME }}-${{ github.sha }}-${{ github.run_id }}-check
           restore-keys: |
             ${{ secrets.CACHE_NAME }}-
+      - name: Resolve base image
+        env:
+          DOCKERFILE: Dockerfile
+        run: |
+          BASE_IMAGE=$(awk '
+            /^[[:space:]]*#/ { next }
+            toupper($1) == "FROM" {
+              if ($2 ~ /^--platform=/) {
+                print $3
+              } else {
+                print $2
+              }
+              exit
+            }
+          ' "$DOCKERFILE")
+
+          if [ -z "$BASE_IMAGE" ]; then
+            echo "Unable to resolve base image from $DOCKERFILE" >&2
+            exit 1
+          fi
+
+          case "$BASE_IMAGE" in
+            *[!A-Za-z0-9._/:@+-]*)
+              echo "Invalid base image reference in $DOCKERFILE: $BASE_IMAGE" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "Base image: $BASE_IMAGE"
+          echo "BASE_IMAGE=$BASE_IMAGE" >> "$GITHUB_ENV"
       - name: Prepare
         run: |
-          docker pull python:3.12-slim
+          docker pull "$BASE_IMAGE"
           docker pull "$DOCKER_USER/whisper-live-server" || true
       - name: Check
         id: check
         run: |
           BASE_UPDATED=false
 
-          base_ts=$(docker inspect --format='{{.Created}}' python:3.12-slim)
+          base_ts=$(docker inspect --format='{{.Created}}' "$BASE_IMAGE")
           image_ts=$(docker inspect --format='{{.Created}}' "$DOCKER_USER/whisper-live-server" 2>/dev/null || true)
 
           if [ -n "$base_ts" ] && [ -n "$image_ts" ]; then

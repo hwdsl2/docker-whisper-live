@@ -2,6 +2,9 @@ name: whisper_live_test
 
 on: workflow_call
 
+permissions:
+  contents: read
+
 jobs:
   whisper_live_test:
     runs-on: ubuntu-24.04
