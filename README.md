@@ -34,7 +34,16 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - 💬 Join the [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/) community for discussions and showcases
 - ⭐ Star the repository if you find it useful — it helps others discover it
 
-Other self-hosted projects: [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn), [IPsec VPN on Docker](https://github.com/hwdsl2/docker-ipsec-vpn-server), [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [Headscale](https://github.com/hwdsl2/docker-headscale).
+<details>
+<summary>Self-hosted VPN & networking projects</summary>
+
+- [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn)
+- [IPsec VPN on Docker](https://github.com/hwdsl2/docker-ipsec-vpn-server)
+- [WireGuard](https://github.com/hwdsl2/docker-wireguard)
+- [OpenVPN](https://github.com/hwdsl2/docker-openvpn)
+- [Headscale](https://github.com/hwdsl2/docker-headscale)
+
+</details>
 
 ## When to use WhisperLive vs. Whisper
 

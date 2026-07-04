@@ -34,7 +34,16 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - 💬 Присоединяйтесь к сообществу [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/) для обсуждений и демонстрации проектов
 - ⭐ Поставьте звезду репозиторию, если он оказался вам полезен — это поможет другим пользователям его найти.
 
-Другие проекты для самостоятельного размещения: [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-ru.md), [IPsec VPN на Docker](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md), [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md), [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md), [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md).
+<details>
+<summary>Самостоятельно размещаемые VPN и сетевые проекты</summary>
+
+- [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-ru.md)
+- [IPsec VPN на Docker](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md)
+- [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md)
+- [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md)
+- [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
+
+</details>
 
 ## WhisperLive или Whisper?
 

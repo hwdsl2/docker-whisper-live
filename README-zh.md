@@ -34,7 +34,16 @@
 - 💬 加入 [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/) 社区，参与讨论和项目展示
 - ⭐ 如果你觉得本项目有用，请为仓库加星——这有助于让更多人发现它。
 
-其他自托管项目：[Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-zh.md)、[Docker 上的 IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)、[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)。
+<details>
+<summary>自托管 VPN 和网络项目</summary>
+
+- [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-zh.md)
+- [Docker 上的 IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh.md)
+- [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh.md)
+- [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh.md)
+- [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh.md)
+
+</details>
 
 ## WhisperLive 与 Whisper 的选择
 
