@@ -1,0 +1,73 @@
+name: cuda_test
+
+on: workflow_call
+
+permissions:
+  contents: read
+
+jobs:
+  cuda_test:
+    runs-on: ubuntu-24.04
+    if: github.repository_owner == 'hwdsl2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Test CUDA image boot without GPU
+        run: |
+          [ ! -x /usr/bin/docker ] && exit 1
+
+          cd "$GITHUB_WORKSPACE"
+          pwd
+
+          set -x
+
+          docker build -f Dockerfile.cuda -t whisper-live-cuda-test .
+
+          docker run \
+            --name whisper-live-cuda-runtime-test \
+            --restart=always \
+            -v whisper-live-cuda-runtime-test-data:/var/lib/whisper-live \
+            -e WHISPERLIVE_MODEL=tiny \
+            -e WHISPERLIVE_API_KEY=test-whisperlive-cuda-key \
+            -p 9090:9090/tcp \
+            -p 8000:8000/tcp \
+            -d whisper-live-cuda-test
+
+          # Wait for REST server to be ready (up to 300 seconds)
+          # /docs returns 200 (no auth) or 401 (auth enabled) once the server is up.
+          i=0
+          while [ "$i" -lt 300 ]; do
+            http_code=$(docker exec whisper-live-cuda-runtime-test curl -s -o /dev/null -w '%{http_code}' --max-time 2 \
+                http://127.0.0.1:8000/docs 2>/dev/null || true)
+            if [ "$http_code" = "200" ] || [ "$http_code" = "401" ]; then
+              break
+            fi
+            sleep 1
+            i=$((i + 1))
+          done
+
+          docker ps | grep whisper-live-cuda-runtime-test
+          docker logs whisper-live-cuda-runtime-test
+
+          # Verify REST API docs endpoint and auth enforcement.
+          curl -sf --max-time 5 \
+            -H "Authorization: Bearer test-whisperlive-cuda-key" \
+            http://127.0.0.1:8000/docs
+
+          http_code=$(curl -s -o /dev/null -w '%{http_code}' \
+            http://127.0.0.1:8000/docs 2>/dev/null || true)
+          [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
+
+          docker exec whisper-live-cuda-runtime-test whisper_live_manage --showinfo
+          docker exec whisper-live-cuda-runtime-test whisper_live_manage --showkey
+          docker exec whisper-live-cuda-runtime-test whisper_live_manage --listmodels
+          docker exec whisper-live-cuda-runtime-test python3 -c 'import torch; print(torch.version.cuda or "no cuda version")'
+
+          exit 0
+      - name: Clear
+        if: always()
+        run: |
+          docker rm -f whisper-live-cuda-runtime-test || true
+          docker volume rm whisper-live-cuda-runtime-test-data || true
+          docker rmi whisper-live-cuda-test || true

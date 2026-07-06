@@ -8,6 +8,7 @@ on:
       - '.github/workflows/test.yml'
       - '.github/workflows/shellcheck.yml'
       - '.github/workflows/whisper_live_test.yml'
+      - '.github/workflows/cuda_test.yml'
 
 permissions:
   contents: read
@@ -20,3 +21,7 @@ jobs:
   whisper_live_test:
     if: github.repository_owner == 'hwdsl2'
     uses: ./.github/workflows/whisper_live_test.yml
+
+  cuda_test:
+    if: github.repository_owner == 'hwdsl2'
+    uses: ./.github/workflows/cuda_test.yml
