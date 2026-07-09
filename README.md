@@ -187,6 +187,7 @@ This Docker image uses the following variables, that can be declared in an `env`
 | `WHISPERLIVE_LOG_LEVEL` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. | `INFO` |
 | `WHISPERLIVE_API_KEY` | Optional API key. Fresh persistent installs auto-generate one. REST requests must include `Authorization: Bearer <key>`; WebSocket clients can use `?token=<key>`. Set explicitly empty to disable authentication. | Auto-generated for fresh persistent installs |
 | `WHISPERLIVE_LOCAL_ONLY` | When set to any non-empty value (e.g. `true`), disables all HuggingFace model downloads. For offline or air-gapped deployments with pre-cached models. | *(not set)* |
+| `WHISPERLIVE_DISABLE_USAGE_COUNTS` | Set to `1` to disable anonymous aggregate usage counts. | *(not set)* |
 
 **Note:** In your `env` file, you may enclose values in single quotes, e.g. `VAR='value'`. Do not add spaces around `=`. If you change `WHISPERLIVE_PORT` or `WHISPERLIVE_REST_PORT`, update the `-p` flags in the `docker run` command accordingly.
 
@@ -630,6 +631,10 @@ Your downloaded models are preserved in the `whisper-live-data` volume.
 WhisperLive can be used as the real-time speech-to-text service in a broader self-hosted AI setup.
 
 For full and lightweight Docker Compose stacks, manual `docker run` examples, and voice/RAG/MCP pipeline examples with Kokoro, Embeddings, LiteLLM, Ollama, Docling, and MCP Gateway, see [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack).
+
+## Usage counts
+
+This image uses public GitHub release asset download counts for anonymous, aggregate usage counts. Counts are approximate and are not unique users or active installs. The image does not send a telemetry payload or use a private collector. It only attempts the best-effort count after the server starts successfully with a mounted `/var/lib/whisper-live` volume, and again when that persistent install first runs a different image build. To opt out, set `WHISPERLIVE_DISABLE_USAGE_COUNTS=1`.
 
 ## Technical details
 

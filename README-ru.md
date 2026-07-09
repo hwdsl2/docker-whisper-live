@@ -187,6 +187,7 @@ docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 | `WHISPERLIVE_LOG_LEVEL` | Уровень логирования: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. | `INFO` |
 | `WHISPERLIVE_API_KEY` | Необязательный API-ключ. В новых постоянных установках генерируется автоматически. REST-запросы должны содержать `Authorization: Bearer <key>`; WebSocket-клиенты могут использовать `?token=<key>`. Явно пустое значение отключает аутентификацию. | Автоматически для новых постоянных установок |
 | `WHISPERLIVE_LOCAL_ONLY` | При установке любого непустого значения (например, `true`) отключает загрузку моделей с HuggingFace. Для офлайн-развёртываний. | *(не задано)* |
+| `WHISPERLIVE_DISABLE_USAGE_COUNTS` | Установите `1`, чтобы отключить анонимные агрегированные счётчики использования. | *(не задано)* |
 
 Пример использования env-файла:
 
@@ -595,6 +596,10 @@ docker rm -f whisper-live
 WhisperLive можно использовать как службу распознавания речи в реальном времени в более широком self-hosted AI-стеке.
 
 Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с Kokoro, Embeddings, LiteLLM, Ollama, Docling и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
+
+## Счётчики использования
+
+Этот образ использует публичные счётчики скачиваний GitHub Release assets для анонимной агрегированной статистики использования. Эти числа приблизительны и не являются количеством уникальных пользователей или активных установок. Образ не отправляет telemetry payload и не использует частный сборщик. Он выполняет только best-effort запрос после успешного запуска сервера с подключённым томом `/var/lib/whisper-live`, а также при первом запуске другой сборки образа для этой постоянной установки. Чтобы отключить это, задайте `WHISPERLIVE_DISABLE_USAGE_COUNTS=1`.
 
 ## Техническая информация
 

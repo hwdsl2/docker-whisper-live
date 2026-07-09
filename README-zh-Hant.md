@@ -189,6 +189,7 @@ docker image tag quay.io/hwdsl2/whisper-live-server hwdsl2/whisper-live-server
 | `WHISPERLIVE_API_KEY` | 選用 API 金鑰。新持久化安裝會自動產生。REST 請求須包含 `Authorization: Bearer <key>`；WebSocket 用戶端可使用 `?token=<key>`。明確設定為空可停用驗證。 | 新持久化安裝自動產生 |
 | `WHISPERLIVE_LOG_LEVEL` | 記錄層級：`DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`。 | `INFO` |
 | `WHISPERLIVE_LOCAL_ONLY` | 設為任意非空值（如 `true`）時，禁止所有 HuggingFace 模型下載。適用於預先快取模型的離線或隔離網路部署。 | *（未設定）* |
+| `WHISPERLIVE_DISABLE_USAGE_COUNTS` | 設為 `1` 可停用匿名彙總使用計數。 | *（未設定）* |
 
 **注意：** 在 `env` 檔案中，值可用單引號括起，例如 `VAR='value'`。`=` 兩側不要有空格。如更改 `WHISPERLIVE_PORT` 或 `WHISPERLIVE_REST_PORT`，請相應更新 `docker run` 指令中的 `-p` 參數。
 
@@ -601,6 +602,10 @@ docker rm -f whisper-live
 WhisperLive 可作為更廣泛的自託管 AI 設定中的即時語音轉文字服務。
 
 如需完整和輕量級 Docker Compose 技術堆疊、手動 `docker run` 範例，以及結合 Kokoro、Embeddings、LiteLLM、Ollama、Docling 和 MCP Gateway 的語音/RAG/MCP 流水線範例，請參閱 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md)。
+
+## 使用計數
+
+此映像使用公開的 GitHub Release 資源下載次數進行匿名彙總使用計數。計數是近似值，不代表唯一使用者或活躍安裝。映像不會傳送遙測負載，也不會使用私有收集器。僅當伺服器成功啟動且掛載了 `/var/lib/whisper-live` 卷後，才會以盡力而為方式計數；當該持久化安裝首次執行不同映像建置時，也會再次計數。若要退出，請設定 `WHISPERLIVE_DISABLE_USAGE_COUNTS=1`。
 
 ## 技術細節
 
