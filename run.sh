@@ -126,6 +126,8 @@ DATA_DIR="/var/lib/whisper-live"
 API_KEY_FILE="${DATA_DIR}/.api_key"
 AUTH_ENABLED_FILE="${DATA_DIR}/.auth_enabled"
 AUTO_API_KEY_MARKER="${DATA_DIR}/.auto_api_key_created"
+USAGE_STATE_DIR="${DATA_DIR}/.whisperlive-usage"
+USAGE_BASE_URL=${WHISPERLIVE_USAGE_BASE_URL:-https://github.com/hwdsl2/ai-stack-extras/releases/download/v1.0.0}
 data_mounted=false
 data_existing=false
 
@@ -135,6 +137,79 @@ fi
 if $data_mounted && find "$DATA_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null | grep -q .; then
   data_existing=true
 fi
+
+usage_arch() {
+  local arch
+  arch=$(uname -m 2>/dev/null || printf 'unknown')
+  case "$arch" in
+    x86_64|amd64) printf 'amd64' ;;
+    aarch64|arm64) printf 'arm64' ;;
+    *) printf 'other' ;;
+  esac
+}
+
+write_usage_state() {
+  local state_file version tmp_file
+  state_file=$1
+  version=$2
+  mkdir -p "$USAGE_STATE_DIR"
+  tmp_file=$(mktemp "$USAGE_STATE_DIR/.usage.XXXXXX")
+  printf '%s\n' "$version" > "$tmp_file"
+  chmod 0644 "$tmp_file" 2>/dev/null || true
+  mv "$tmp_file" "$state_file"
+}
+
+fetch_usage_asset() {
+  local asset base_url
+  asset=$1
+  base_url=${USAGE_BASE_URL%/}
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --max-time 5 -o /dev/null "$base_url/$asset" >/dev/null 2>&1
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -T 5 -O /dev/null "$base_url/$asset" >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+
+read_state_value() {
+  [ -r "$1" ] || return 0
+  tr -d '[:space:]' < "$1"
+}
+
+report_usage_counts() {
+  local current_version accel arch state_file last_version action
+
+  [ "${WHISPERLIVE_DISABLE_USAGE_COUNTS:-0}" != "1" ] || return 0
+  $data_mounted || return 0
+
+  current_version="${IMAGE_FLAVOR:-unknown}-${IMAGE_VER:-unknown}"
+  case "${IMAGE_FLAVOR:-}" in
+    cuda) accel=cuda ;;
+    *) accel=cpu ;;
+  esac
+  arch=$(usage_arch)
+
+  state_file="$USAGE_STATE_DIR/whisperlive.version"
+  last_version=$(read_state_value "$state_file")
+  action=
+
+  if [ -z "$last_version" ]; then
+    if $data_existing; then
+      action=upgrade
+    else
+      action=deploy
+    fi
+  elif [ "$last_version" != "$current_version" ]; then
+    action=upgrade
+  fi
+
+  if [ -n "$action" ]; then
+    if fetch_usage_asset "cu-v1-whisperlive-$action-$accel-$arch"; then
+      write_usage_state "$state_file" "$current_version"
+    fi
+  fi
+}
 
 if [ -n "$WHISPERLIVE_API_KEY" ]; then
   printf '%s' "$WHISPERLIVE_API_KEY" > "$API_KEY_FILE"
@@ -330,6 +405,8 @@ if ! wait_for_server; then
   fi
   exit 1
 fi
+
+report_usage_counts
 
 echo
 echo "==========================================================="
