@@ -18,7 +18,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - Audio stays on your server — no data sent to third parties
 - NVIDIA GPU (CUDA) acceleration for faster inference (`:cuda` image tag)
 - Offline/air-gapped mode — run without internet access using pre-cached models (`WHISPERLIVE_LOCAL_ONLY`)
-- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml)
+- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions)
 - Persistent model cache via a Docker volume
 - Multi-arch: `linux/amd64`, `linux/arm64`
 

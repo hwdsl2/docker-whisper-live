@@ -18,7 +18,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - Аудио остаётся на вашем сервере — данные не передаются третьим сторонам
 - Ускорение на GPU NVIDIA (CUDA) для более быстрого инференса (тег образа `:cuda`)
 - Офлайн-режим — работа без доступа к интернету с предварительно загруженными моделями (`WHISPERLIVE_LOCAL_ONLY`)
-- Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml)
+- Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions)
 - Постоянный кэш моделей через Docker-том
 - Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64`
 

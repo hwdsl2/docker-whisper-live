@@ -18,7 +18,7 @@
 - 音频数据留在您的服务器上，不发送给第三方
 - NVIDIA GPU (CUDA) 加速推理（使用 `:cuda` 镜像标签）
 - 离线/隔离网络模式 — 使用预先缓存的模型无需互联网访问 (`WHISPERLIVE_LOCAL_ONLY`)
-- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) 自动构建和发布
+- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions) 自动构建和发布
 - 通过 Docker 数据卷持久化模型缓存
 - 多架构支持：`linux/amd64`、`linux/arm64`
 
