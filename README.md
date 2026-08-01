@@ -91,6 +91,10 @@ docker run \
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted ports.
 
+> **Temporary note:** With `WHISPERLIVE_API_KEY` enabled, WebSocket connections on port `9090` currently fail with HTTP 500 because of an [upstream WhisperLive issue](https://github.com/collabora/WhisperLive/issues/532). Authenticated REST requests on port `8000` continue to work. Follow [docker-whisper-live #1](https://github.com/hwdsl2/docker-whisper-live/issues/1) for progress.
+>
+> If you must temporarily disable native authentication for WebSocket use, first bind both ports to localhost and protect them with authentication at the reverse proxy. Do not expose unauthenticated ports directly.
+
 The Whisper `base` model (~145 MB) is downloaded and cached on first client connection. Check the logs to confirm the server is ready:
 
 ```bash
@@ -498,7 +502,7 @@ RAM figures are approximate and reflect INT8 quantization (default). Models are 
 
 If your WhisperLive server is reachable from the public internet — even briefly — apply at minimum these protections. WhisperLive is CPU/GPU-intensive, so an unprotected endpoint can be abused to burn your compute resources.
 
-**1. Use an API key.** Fresh installs with a mounted `/var/lib/whisper-live` volume auto-generate an API key. Display it with `docker exec whisper-live whisper_live_manage --showkey`, or use `docker exec whisper-live whisper_live_manage --getkey` in scripts. Existing installs without a key remain open for backward compatibility; set `WHISPERLIVE_API_KEY` in your `env` file to enable authentication manually. REST clients must send `Authorization: Bearer <key>`; WebSocket clients can send the same header or add `?token=<key>` to the URL.
+**1. Use an API key.** Fresh installs with a mounted `/var/lib/whisper-live` volume auto-generate an API key. Display it with `docker exec whisper-live whisper_live_manage --showkey`, or use `docker exec whisper-live whisper_live_manage --getkey` in scripts. Existing installs without a key remain open for backward compatibility; set `WHISPERLIVE_API_KEY` in your `env` file to enable authentication manually. REST clients must send `Authorization: Bearer <key>`; WebSocket clients can send the same header or add `?token=<key>` to the URL. Native WebSocket API-key authentication is temporarily affected by the upstream issue described in the [Quick start](#quick-start); REST authentication remains available.
 
 **2. Bind to localhost when fronted by a reverse proxy.** Replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` (or change both port mappings to their `127.0.0.1:` equivalents in `docker-compose.yml`) so the unencrypted ports are not reachable directly from outside the host.
 
