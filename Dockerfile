@@ -8,13 +8,18 @@ FROM python:3.12-slim
 
 WORKDIR /opt/src
 
+ARG WHISPERLIVE_VERSION=0.9.0
+ARG WEBSOCKETS_VERSION=16.1
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
+COPY ./patches/whisperlive-0.9.0-websocket-auth.patch /tmp/
+
 RUN set -x \
     && apt-get update \
-    && apt-get install -y --no-install-recommends curl gcc libc6-dev portaudio19-dev \
+    && apt-get install -y --no-install-recommends curl gcc libc6-dev patch portaudio19-dev \
     && python3 -m venv /opt/venv \
     && pip install --no-cache-dir --upgrade pip \
     && ARCH=$(uname -m) \
@@ -24,15 +29,23 @@ RUN set -x \
          pip install --no-cache-dir torch; \
        fi \
     && pip install --no-cache-dir --uploaded-prior-to P3D \
-         "whisper-live>=0.9.0" \
+         "whisper-live==$WHISPERLIVE_VERSION" \
+         "websockets==$WEBSOCKETS_VERSION" \
          faster-whisper \
          fastapi \
          uvicorn \
          python-multipart \
+    && site_dir=$(python -c 'import site; print(site.getsitepackages()[0])') \
+    && patch --batch --forward --fuzz=0 -p1 -d "$site_dir" \
+         < /tmp/whisperlive-0.9.0-websocket-auth.patch \
+    && WHISPERLIVE_VERSION="$WHISPERLIVE_VERSION" WEBSOCKETS_VERSION="$WEBSOCKETS_VERSION" \
+         python -c 'import os; from importlib.metadata import version; assert version("whisper-live") == os.environ["WHISPERLIVE_VERSION"]; assert version("websockets") == os.environ["WEBSOCKETS_VERSION"]' \
+    && python -m py_compile "$site_dir/whisper_live/server.py" \
+    && rm -f /tmp/whisperlive-0.9.0-websocket-auth.patch \
     && if [ "$ARCH" != "x86_64" ]; then \
          pip list --format=freeze | grep -iE '^nvidia[_-]|^cuda[_-]|^triton' | cut -d= -f1 | xargs -r pip uninstall -y; \
        fi \
-    && apt-get purge -y --auto-remove gcc libc6-dev \
+    && apt-get purge -y --auto-remove gcc libc6-dev patch \
     && rm -rf /var/lib/apt/lists/* \
     && find /opt/venv -name '*.pyi' -delete \
     && { find /opt/venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true; } \
