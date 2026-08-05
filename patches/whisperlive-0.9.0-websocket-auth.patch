@@ -1,5 +1,5 @@
 From: docker-whisper-live downstream backport
-Subject: Fix WebSocket API-key authentication with websockets 16.1
+Subject: Fix WebSocket API-key authentication with the websockets sync API
 
 Backport of the production-code change merged upstream in commit
 bde730b81bb23b5286470524d5f527caf6a8b9e0 for WhisperLive issue #532.
