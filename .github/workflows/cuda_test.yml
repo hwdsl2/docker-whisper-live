@@ -59,6 +59,13 @@ jobs:
             http://127.0.0.1:8000/docs 2>/dev/null || true)
           [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
 
+          # Exercise real WebSocket handshakes against the CUDA image's authentication callback.
+          docker exec -i \
+            -e WS_API_KEY=test-whisperlive-cuda-key \
+            -e WS_EXPECT_AUTH=1 \
+            whisper-live-cuda-runtime-test python3 - \
+            < .github/workflows/tests/test_websocket_auth.py
+
           docker exec whisper-live-cuda-runtime-test whisper_live_manage --showinfo
           docker exec whisper-live-cuda-runtime-test whisper_live_manage --showkey
           docker exec whisper-live-cuda-runtime-test whisper_live_manage --listmodels

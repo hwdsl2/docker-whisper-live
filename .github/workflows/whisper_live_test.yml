@@ -114,7 +114,9 @@ jobs:
 
           # Build optional auth header args
           whisper_live_curl_args=()
+          whisper_live_key=""
           if [ "$TEST_ID" = "with-key" ]; then
+            whisper_live_key=test-whisperlive-key
             whisper_live_curl_args=(-H "Authorization: Bearer test-whisperlive-key")
           elif [ "$TEST_ID" = "empty-key" ] || [ "$TEST_ID" = "existing-no-key" ]; then
             whisper_live_key=$(docker exec "$TEST_ID" whisper_live_manage --getkey 2>/dev/null || true)
@@ -141,6 +143,20 @@ jobs:
           else
             # Explicit empty keys and existing no-key volumes preserve no-auth behavior.
             curl -sf --max-time 5 http://127.0.0.1:8000/docs >/dev/null
+          fi
+
+          # Exercise real WebSocket handshakes against the production callback.
+          if [ -n "$whisper_live_key" ]; then
+            docker exec -i \
+              -e WS_API_KEY="$whisper_live_key" \
+              -e WS_EXPECT_AUTH=1 \
+              "$TEST_ID" python3 - \
+              < .github/workflows/tests/test_websocket_auth.py
+          else
+            docker exec -i \
+              -e WS_EXPECT_AUTH=0 \
+              "$TEST_ID" python3 - \
+              < .github/workflows/tests/test_websocket_auth.py
           fi
 
           # Test whisper_live_manage commands

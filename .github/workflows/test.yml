@@ -9,6 +9,7 @@ on:
       - '.github/workflows/shellcheck.yml'
       - '.github/workflows/whisper_live_test.yml'
       - '.github/workflows/cuda_test.yml'
+      - '.github/workflows/tests/**'
 
 permissions:
   contents: read
