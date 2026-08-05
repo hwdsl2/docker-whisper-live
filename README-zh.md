@@ -93,10 +93,6 @@ docker run \
 
 **注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。
 
-> **临时说明：** 启用 `WHISPERLIVE_API_KEY` 后，由于 [WhisperLive 上游问题](https://github.com/collabora/WhisperLive/issues/532)，端口 `9090` 上的 WebSocket 连接目前会返回 HTTP 500。端口 `8000` 上经过身份验证的 REST 请求仍可正常使用。进展请参阅 [docker-whisper-live #1](https://github.com/hwdsl2/docker-whisper-live/issues/1)。
->
-> 如果必须临时禁用原生身份验证以使用 WebSocket，请先将两个端口绑定到本地主机，并在反向代理层启用身份验证。请勿直接暴露未经身份验证的端口。
-
 首次客户端连接时，Whisper `base` 模型（约 145 MB）将自动下载并缓存。查看日志确认服务器已就绪：
 
 ```bash
@@ -105,16 +101,23 @@ docker logs whisper-live
 
 看到 "WhisperLive real-time transcription server is ready" 后：
 
+新的持久化安装会自动启用 API 密钥认证。获取密钥：
+
+```bash
+API_KEY=$(docker exec whisper-live whisper_live_manage --getkey)
+```
+
 **连接实时 WebSocket 客户端：**
 
 ```
-ws://您的服务器IP:9090
+ws://您的服务器IP:9090/?token=您的API密钥
 ```
 
 **或通过 REST API 转录文件：**
 
 ```bash
 curl http://您的服务器IP:8000/v1/audio/transcriptions \
+    -H "Authorization: Bearer $API_KEY" \
     -F file=@audio.mp3 \
     -F model=whisper-1
 ```
@@ -355,7 +358,8 @@ pip install whisper-live
 ### 浏览器客户端示例
 
 ```javascript
-const ws = new WebSocket("ws://您的服务器IP:9090");
+const apiKey = "您的API密钥";
+const ws = new WebSocket(`ws://您的服务器IP:9090/?token=${encodeURIComponent(apiKey)}`);
 
 ws.onopen = () => {
   // 发送配置信息
@@ -504,7 +508,7 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
 
 如果你的 WhisperLive 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。WhisperLive 对 CPU/GPU 资源消耗较大，未做防护的接口可能被滥用，浪费你的计算资源。
 
-**1. 使用 API 密钥。** 挂载 `/var/lib/whisper-live` 数据卷的新安装会自动生成 API 密钥。可用 `docker exec whisper-live whisper_live_manage --showkey` 查看；脚本中可用 `docker exec whisper-live whisper_live_manage --getkey`。没有密钥的既有安装会保持开放以兼容旧行为；也可以在 `env` 文件中设置 `WHISPERLIVE_API_KEY` 手动启用认证。REST 客户端需发送 `Authorization: Bearer <key>`；WebSocket 客户端可发送相同请求头或在 URL 中添加 `?token=<key>`。上游问题暂时影响 WebSocket 的原生 API 密钥认证；REST 认证仍然可用。请参阅[快速开始](#快速开始)中的临时说明。
+**1. 使用 API 密钥。** 挂载 `/var/lib/whisper-live` 数据卷的新安装会自动生成 API 密钥。可用 `docker exec whisper-live whisper_live_manage --showkey` 查看；脚本中可用 `docker exec whisper-live whisper_live_manage --getkey`。没有密钥的既有安装会保持开放以兼容旧行为；也可以在 `env` 文件中设置 `WHISPERLIVE_API_KEY` 手动启用认证。REST 客户端需发送 `Authorization: Bearer <key>`；WebSocket 客户端可发送相同请求头或在 URL 中添加 `?token=<key>`。
 
 **2. 在反向代理后面时绑定到 localhost。** 将 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`（或在 `docker-compose.yml` 中将两个端口映射改为各自的 `127.0.0.1:` 等效形式），使未加密端口无法从主机外部直接访问。
 
@@ -605,7 +609,7 @@ location /v1/ {
 }
 ```
 
-WebSocket 端点（`/`，端口 `9090`）不支持 HTTP 身份验证头；请将其端口绑定到 `127.0.0.1` 并通过反向代理进行访问控制来保护它。
+非浏览器 WebSocket 客户端可使用 `Authorization` 请求头进行认证。由于浏览器 WebSocket API 无法设置任意请求头，浏览器客户端可使用 `?token=<key>`。为增强安全性，请将端口 `9090` 绑定到 `127.0.0.1` 并置于反向代理之后。
 
 </details>
 
