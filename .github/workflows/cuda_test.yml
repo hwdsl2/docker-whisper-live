@@ -22,11 +22,17 @@ jobs:
 
           set -x
 
-          docker build -f Dockerfile.cuda -t whisper-live-cuda-test .
+          docker build \
+            -f Dockerfile.cuda \
+            --build-arg BUILD_DATE=ci-test \
+            --build-arg VERSION=cuda \
+            -t whisper-live-cuda-test \
+            .
 
           docker run \
             --name whisper-live-cuda-runtime-test \
             --restart=always \
+            -e WHISPERLIVE_DISABLE_USAGE_COUNTS=1 \
             -v whisper-live-cuda-runtime-test-data:/var/lib/whisper-live \
             -e WHISPERLIVE_MODEL=tiny \
             -e WHISPERLIVE_API_KEY=test-whisperlive-cuda-key \

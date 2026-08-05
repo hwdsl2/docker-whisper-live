@@ -47,6 +47,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e WHISPERLIVE_DISABLE_USAGE_COUNTS=1 \
               -v whisper-live-test-data:/var/lib/whisper-live \
               -v ./whisper-live.env.example:/whisper-live.env:ro \
               -e WHISPERLIVE_MODEL=tiny \
@@ -57,6 +58,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e WHISPERLIVE_DISABLE_USAGE_COUNTS=1 \
               -v whisper-live-test-data:/var/lib/whisper-live \
               -e WHISPERLIVE_MODEL=tiny \
               -p 9090:9090/tcp \
@@ -66,6 +68,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e WHISPERLIVE_DISABLE_USAGE_COUNTS=1 \
               -v whisper-live-test-data:/var/lib/whisper-live \
               -e WHISPERLIVE_MODEL=tiny \
               -e WHISPERLIVE_API_KEY=test-whisperlive-key \
@@ -76,6 +79,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e WHISPERLIVE_DISABLE_USAGE_COUNTS=1 \
               -v whisper-live-test-data:/var/lib/whisper-live \
               -e WHISPERLIVE_MODEL=tiny \
               -e WHISPERLIVE_API_KEY= \
@@ -86,6 +90,7 @@ jobs:
             docker run \
               --name "$TEST_ID" \
               --restart=always \
+              -e WHISPERLIVE_DISABLE_USAGE_COUNTS=1 \
               -v whisper-live-test-data:/var/lib/whisper-live \
               -e WHISPERLIVE_MODEL=tiny \
               -p 9090:9090/tcp \
