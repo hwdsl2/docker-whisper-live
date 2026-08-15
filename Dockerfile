@@ -28,7 +28,7 @@ RUN set -x \
        else \
          pip install --no-cache-dir torch; \
        fi \
-    && pip install --no-cache-dir --uploaded-prior-to P3D \
+    && pip install --no-cache-dir --uploaded-prior-to P7D \
          "whisper-live==$WHISPERLIVE_VERSION" \
          "websockets==$WEBSOCKETS_VERSION" \
          faster-whisper \

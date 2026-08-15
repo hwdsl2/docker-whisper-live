@@ -24,7 +24,7 @@ RUN set -x \
     && python3 -m venv /opt/venv \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu129 \
-    && pip install --no-cache-dir --uploaded-prior-to P3D \
+    && pip install --no-cache-dir --uploaded-prior-to P7D \
          "whisper-live==$WHISPERLIVE_VERSION" \
          "websockets==$WEBSOCKETS_VERSION" \
          faster-whisper \
