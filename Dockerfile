@@ -19,7 +19,7 @@ COPY ./patches/whisperlive-0.9.0-websocket-auth.patch /tmp/
 
 RUN set -x \
     && apt-get update \
-    && apt-get install -y --no-install-recommends curl gcc libc6-dev patch portaudio19-dev \
+    && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev patch portaudio19-dev \
     && python3 -m venv /opt/venv \
     && pip install --no-cache-dir --upgrade pip \
     && ARCH=$(uname -m) \
