@@ -22,7 +22,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 - Постоянный кэш моделей через Docker-том
 - Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64`
 
-> 📘 **Новая книга:** [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon). Практическое руководство по созданию, защите и эксплуатации собственного приватного AI-стека.
+> 📘 **Kindle Countdown Deal: $0.99/£0.99 (только в США и Великобритании).** [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) — практическое руководство по созданию, защите и эксплуатации собственного приватного AI-стека.
 
 **Также доступно:**
 
