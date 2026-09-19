@@ -73,7 +73,8 @@ docker run \
 
 </details>
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted ports.
+> [!NOTE]
+> For internet-facing deployments, use a [reverse proxy](#using-a-reverse-proxy) to add HTTPS. Also replace `-p 9090:9090 -p 8000:8000` with `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted ports.
 
 The Whisper `base` model (~145 MB) is downloaded and cached on first client connection. Check the logs to confirm the server is ready:
 
@@ -261,7 +262,8 @@ volumes:
     name: whisper-live-data
 ```
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"9090:9090/tcp"` and `"8000:8000/tcp"` to their `127.0.0.1:` equivalents in `docker-compose.yml`.
+> [!NOTE]
+> For internet-facing deployments, use a [reverse proxy](#using-a-reverse-proxy) to add HTTPS. Also change `"9090:9090/tcp"` and `"8000:8000/tcp"` to their `127.0.0.1:` equivalents in `docker-compose.yml`.
 
 <details>
 <summary><strong>Using docker-compose with GPU (NVIDIA CUDA)</strong></summary>
@@ -574,7 +576,8 @@ server {
 }
 ```
 
-> **Important:** WebSocket proxying requires `proxy_http_version 1.1` and the `Upgrade`/`Connection` headers. Without these, real-time streaming will not work through nginx.
+> [!IMPORTANT]
+> WebSocket proxying requires `proxy_http_version 1.1` and the `Upgrade`/`Connection` headers. Without these, real-time streaming will not work through nginx.
 
 <details>
 <summary><strong>Adding extra authentication at the proxy layer</strong></summary>

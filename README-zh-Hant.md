@@ -75,7 +75,8 @@ docker run \
 
 **重要：** 此映像執行預設 `base` 模型需要至少 700 MB 可用記憶體。記憶體為 512 MB 或更少的系統不受支援。
 
-**注意：** 如需面向網際網路的部署，**強烈建議**使用[反向代理](#使用反向代理)來新增 HTTPS。此時，還應將上述 `docker run` 指令中的 `-p 9090:9090 -p 8000:8000` 替換為 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止從外部直接存取未加密的連接埠。
+> [!NOTE]
+> 如需面向網際網路的部署，請使用[反向代理](#使用反向代理)來新增 HTTPS。同時，請將上述 `docker run` 指令中的 `-p 9090:9090 -p 8000:8000` 替換為 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止從外部直接存取未加密的連接埠。
 
 首次用戶端連線時，Whisper `base` 模型（約 145 MB）將自動下載並快取。查看記錄確認伺服器已就緒：
 
@@ -263,7 +264,8 @@ volumes:
     name: whisper-live-data
 ```
 
-**注意：** 如需面向公網部署，強烈建議使用[反向代理](#使用反向代理)啟用 HTTPS。此時請將 `docker-compose.yml` 中的連接埠改為其 `127.0.0.1:` 形式。
+> [!NOTE]
+> 如需面向公網部署，請使用[反向代理](#使用反向代理)啟用 HTTPS。同時，請將 `docker-compose.yml` 中的連接埠改為其 `127.0.0.1:` 形式。
 
 <details>
 <summary><strong>使用 docker-compose 部署 GPU（NVIDIA CUDA）</strong></summary>
@@ -558,7 +560,8 @@ server {
 }
 ```
 
-> **重要：** WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 請求標頭。若缺少這些設定，即時串流將無法透過 nginx 正常運作。
+> [!IMPORTANT]
+> WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 請求標頭。若缺少這些設定，即時串流將無法透過 nginx 正常運作。
 
 <details>
 <summary><strong>在代理層新增額外身份驗證</strong></summary>

@@ -75,7 +75,8 @@ docker run \
 
 **重要：** 此镜像运行默认 `base` 模型需要至少 700 MB 可用内存。内存为 512 MB 或更少的系统不受支持。
 
-**注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。
+> [!NOTE]
+> 如需面向互联网的部署，请使用[反向代理](#使用反向代理)来添加 HTTPS。同时，请将上述 `docker run` 命令中的 `-p 9090:9090 -p 8000:8000` 替换为 `-p 127.0.0.1:9090:9090 -p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。
 
 首次客户端连接时，Whisper `base` 模型（约 145 MB）将自动下载并缓存。查看日志确认服务器已就绪：
 
@@ -263,7 +264,8 @@ volumes:
     name: whisper-live-data
 ```
 
-**注：** 如需面向公网部署，强烈建议使用[反向代理](#使用反向代理)启用 HTTPS。此时请将 `docker-compose.yml` 中的端口改为其 `127.0.0.1:` 形式。
+> [!NOTE]
+> 如需面向公网部署，请使用[反向代理](#使用反向代理)启用 HTTPS。同时，请将 `docker-compose.yml` 中的端口改为其 `127.0.0.1:` 形式。
 
 <details>
 <summary><strong>使用 docker-compose 部署 GPU（NVIDIA CUDA）</strong></summary>
@@ -576,7 +578,8 @@ server {
 }
 ```
 
-> **重要：** WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 请求头。若缺少这些配置，实时流式传输将无法通过 nginx 正常工作。
+> [!IMPORTANT]
+> WebSocket 代理需要 `proxy_http_version 1.1` 以及 `Upgrade`/`Connection` 请求头。若缺少这些配置，实时流式传输将无法通过 nginx 正常工作。
 
 <details>
 <summary><strong>在代理层添加额外身份验证</strong></summary>
