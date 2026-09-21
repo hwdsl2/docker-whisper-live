@@ -22,7 +22,7 @@ Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) re
 - Persistent model cache via a Docker volume
 - Multi-arch: `linux/amd64`, `linux/arm64`
 
-> 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon): **$0.99/£0.99 ebook through Sept. 20** (US/UK). A practical guide to building, securing, and operating your own private AI stack.
+> 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) is a practical guide to building, securing, and operating your own private AI stack.
 
 **Also available:**
 
