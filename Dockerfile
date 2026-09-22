@@ -8,14 +8,12 @@ FROM python:3.12-slim
 
 WORKDIR /opt/src
 
-ARG WHISPERLIVE_VERSION=0.9.0
-ARG WEBSOCKETS_VERSION=17.0.1
+ARG WHISPERLIVE_VERSION=0.10.0
+ARG WEBSOCKETS_VERSION=17.1
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
-
-COPY ./patches/whisperlive-0.9.0-websocket-auth.patch /tmp/
 
 RUN set -x \
     && apt-get update \
@@ -36,8 +34,6 @@ RUN set -x \
          uvicorn \
          python-multipart \
     && site_dir=$(python -c 'import site; print(site.getsitepackages()[0])') \
-    && patch --batch --forward --fuzz=0 -p1 -d "$site_dir" \
-         < /tmp/whisperlive-0.9.0-websocket-auth.patch \
     && WHISPERLIVE_VERSION="$WHISPERLIVE_VERSION" WEBSOCKETS_VERSION="$WEBSOCKETS_VERSION" \
          python -c 'import os; from importlib.metadata import version; assert version("whisper-live") == os.environ["WHISPERLIVE_VERSION"]; assert version("websockets") == os.environ["WEBSOCKETS_VERSION"]' \
     && python -m py_compile "$site_dir/whisper_live/server.py" \
