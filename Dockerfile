@@ -17,7 +17,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN set -x \
     && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev patch portaudio19-dev \
+    && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev portaudio19-dev \
     && python3 -m venv /opt/venv \
     && pip install --no-cache-dir --upgrade pip \
     && ARCH=$(uname -m) \
@@ -37,11 +37,8 @@ RUN set -x \
     && WHISPERLIVE_VERSION="$WHISPERLIVE_VERSION" WEBSOCKETS_VERSION="$WEBSOCKETS_VERSION" \
          python -c 'import os; from importlib.metadata import version; assert version("whisper-live") == os.environ["WHISPERLIVE_VERSION"]; assert version("websockets") == os.environ["WEBSOCKETS_VERSION"]' \
     && python -m py_compile "$site_dir/whisper_live/server.py" \
-    && rm -f /tmp/whisperlive-0.9.0-websocket-auth.patch \
-    && if [ "$ARCH" != "x86_64" ]; then \
-         pip list --format=freeze | grep -iE '^nvidia[_-]|^cuda[_-]|^triton' | cut -d= -f1 | xargs -r pip uninstall -y; \
-       fi \
-    && apt-get purge -y --auto-remove gcc libc6-dev patch \
+    && pip list --format=freeze | grep -iE '^nvidia[_-]|^cuda[_-]|^triton' | cut -d= -f1 | xargs -r pip uninstall -y \
+    && apt-get purge -y --auto-remove gcc libc6-dev \
     && rm -rf /var/lib/apt/lists/* \
     && find /opt/venv -name '*.pyi' -delete \
     && { find /opt/venv -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true; } \
