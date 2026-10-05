@@ -432,7 +432,7 @@ echo "==========================================================="
 echo
 echo "Connect a client (WebSocket streaming):"
 if [ -n "$WHISPERLIVE_API_KEY" ]; then
-  echo "  ws://${server_addr}:${WHISPERLIVE_PORT}?token=\$WHISPERLIVE_API_KEY"
+  echo "  ws://${server_addr}:${WHISPERLIVE_PORT}?token=<api-key>"
 else
   echo "  ws://${server_addr}:${WHISPERLIVE_PORT}"
 fi
@@ -440,16 +440,19 @@ echo
 echo "Transcribe a file (REST API):"
 echo "  curl http://${server_addr}:${WHISPERLIVE_REST_PORT}/v1/audio/transcriptions \\"
 if [ -n "$WHISPERLIVE_API_KEY" ]; then
-  echo "    -H \"Authorization: Bearer \$WHISPERLIVE_API_KEY\" \\"
+  echo "    -H \"Authorization: Bearer <api-key>\" \\"
 fi
 echo "    -F file=@audio.mp3 -F model=whisper-1"
 echo
 if [ -n "$WHISPERLIVE_API_KEY" ]; then
   echo "API key authentication is enabled."
-  echo "WebSocket auth:   add ?token=\$WHISPERLIVE_API_KEY to the URL"
+  echo "Replace <api-key> with the key from: docker exec <container> whisper_live_manage --getkey"
   echo
 fi
 echo "Interactive API docs: http://${server_addr}:${WHISPERLIVE_REST_PORT}/docs"
+if [ -n "$WHISPERLIVE_API_KEY" ]; then
+  echo "The docs and OpenAPI schema also require the Authorization: Bearer <api-key> header."
+fi
 echo
 echo "To set up HTTPS, see: Using a reverse proxy"
 echo "  https://github.com/hwdsl2/docker-whisper-live#using-a-reverse-proxy"
