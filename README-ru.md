@@ -27,17 +27,7 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 **Также доступно:**
 
 - Попробовать онлайн: [Открыть в Colab](https://vpnsetup.net/whisper-live-notebook) — Docker и установка не требуются
-- Связанные AI-сервисы: [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
-
-## WhisperLive или Whisper?
-
-| | [docker-whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md) | **docker-whisper-live** |
-|---|---|---|
-| **Назначение** | Транскрибирование готовых аудиофайлов | Живой микрофон / потоковое аудио в реальном времени |
-| **Протокол** | HTTP REST | WebSocket (потоковый) + HTTP REST |
-| **Задержка** | Ответ после обработки всего файла | Почти мгновенно, слово за словом |
-| **Подходит для** | Записи совещаний, загруженные аудиофайлы | Захват в браузере, RTSP-потоки, живые субтитры |
-| **Размер образа** | ~190 МБ (~3,1 ГБ для `:cuda`) | ~750 МБ (~4,5 ГБ для `:cuda`) |
+- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
 ## Быстрый старт
 
@@ -119,9 +109,20 @@ curl -L -o sample_speech.wav \
     "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
 
 curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
+    -H "Authorization: Bearer $API_KEY" \
     -F file=@sample_speech.wav \
     -F model=whisper-1
 ```
+
+## WhisperLive и ScribeCrate: что выбрать
+
+| | [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md) | **docker-whisper-live** |
+|---|---|---|
+| **Назначение** | Транскрибирование готовых аудиофайлов | Живой микрофон / потоковое аудио в реальном времени |
+| **Протокол** | HTTP REST | WebSocket (потоковый) + HTTP REST |
+| **Задержка** | JSON после обработки; сегменты через SSE | Почти мгновенно, слово за словом |
+| **Подходит для** | Записи совещаний, загруженные аудиофайлы | Захват в браузере, RTSP-потоки, живые субтитры |
+| **Размер образа** | ~190 МБ (~3,1 ГБ для `:cuda`) | ~750 МБ (~4,5 ГБ для `:cuda`) |
 
 ## Сообщество
 
@@ -329,10 +330,36 @@ WebSocket-эндпоинт на порту `9090` поддерживает тр�
 
 ### Пример Python-клиента
 
-```python
-from whisper_live.client import TranscriptionClient
+В клиенте `whisper-live` версии 0.9.0 из исходного проекта нет параметра API-ключа. Этот адаптер передаёт заголовок Bearer при установлении WebSocket-соединения и сохраняет транскрибирование файлов и звука с микрофона. Перед запуском примера Python установите соответствующую версию клиента и экспортируйте ключ сервера:
 
-client = TranscriptionClient(
+```bash
+pip install whisper-live==0.9.0
+export WHISPERLIVE_API_KEY="$(docker exec whisper-live whisper_live_manage --getkey)"
+```
+
+Если аутентификация по API-ключу отключена, задайте пустую строку в `WHISPERLIVE_API_KEY`.
+
+```python
+import os
+import websocket
+from whisper_live.client import Client, TranscriptionTeeClient
+
+
+class AuthenticatedClient(Client):
+    def _create_websocket(self):
+        key = os.environ["WHISPERLIVE_API_KEY"]
+        headers = {"Authorization": f"Bearer {key}"} if key else {}
+        self.client_socket = websocket.WebSocketApp(
+            self.socket_url,
+            header=headers,
+            on_open=self.on_open,
+            on_message=self.on_message,
+            on_error=self.on_error,
+            on_close=self.on_close,
+        )
+
+
+connection = AuthenticatedClient(
     "ip_вашего_сервера",
     9090,
     lang="ru",
@@ -340,18 +367,13 @@ client = TranscriptionClient(
     model="base",
     use_vad=True,
 )
+client = TranscriptionTeeClient([connection])
 
 # Транскрибирование файла
 client("audio.mp3")
 
 # Или с микрофона
 # client()
-```
-
-Установка клиентской библиотеки:
-
-```bash
-pip install whisper-live
 ```
 
 ### Пример браузерного клиента
@@ -383,11 +405,18 @@ ws.onmessage = (event) => {
 
 ## REST API
 
-REST API на порту `8000` совместим с [эндпоинтом OpenAI для транскрибирования аудио](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Любое приложение, уже вызывающее `https://api.openai.com/v1/audio/transcriptions`, может переключиться на самостоятельно размещённый сервер, установив:
+REST API на порту `8000` совместим с [эндпоинтом OpenAI для транскрибирования аудио](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create). Для клиентов, использующих OpenAI SDK, задайте базовый URL API и API-ключ вашего сервера:
 
+Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
+
+```bash
+API_KEY="$(docker exec whisper-live whisper_live_manage --getkey)"
+
+export OPENAI_BASE_URL="http://ip_вашего_сервера:8000/v1"
+export OPENAI_API_KEY="$API_KEY"
 ```
-OPENAI_BASE_URL=http://ip_вашего_сервера:8000
-```
+
+Если аутентификация по API-ключу отключена, опустите заголовок `Authorization` в примерах curl. Клиентам OpenAI SDK по-прежнему нужен непустой ключ; в этом случае задайте `OPENAI_API_KEY=unused`.
 
 ### Транскрибирование аудио
 
@@ -408,6 +437,7 @@ Content-Type: multipart/form-data
 
 ```bash
 curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
+    -H "Authorization: Bearer $API_KEY" \
     -F file=@meeting.m4a \
     -F model=whisper-1 \
     -F language=ru
@@ -426,6 +456,8 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
 http://ip_вашего_сервера:8000/docs
 ```
 
+При включённой аутентификации по API-ключу `/docs`, `/openapi.json` и запросы API требуют `Authorization: Bearer <key>`. Обычное открытие в браузере возвращает `401`. Для использования Swagger UI в браузере обеспечьте отправку этого заголовка для документации, схемы и запросов API; параметр token в URL используется только для аутентификации WebSocket-соединений.
+
 ## Постоянные данные
 
 Все данные сервера хранятся в Docker-томе (`/var/lib/whisper-live` внутри контейнера):
@@ -441,7 +473,7 @@ http://ip_вашего_сервера:8000/docs
 
 Загруженные модели сохраняются в томе `whisper-live-data`. Создавайте резервные копии Docker-тома для сохранения загруженных моделей. Модели занимают от 145 МБ до 3 ГБ и могут загружаться несколько минут при первом подключении клиента; сохранение тома позволяет избежать повторной загрузки при пересоздании контейнера.
 
-**Совет:** Том `/var/lib/whisper-live` использует ту же схему кэша HuggingFace, что и том `/var/lib/whisper` проекта `docker-whisper`. Если вы уже скачали модель с помощью `docker-whisper`, можно примонтировать тот же каталог тома, чтобы избежать повторной загрузки.
+**Совет:** Том `/var/lib/whisper-live` использует ту же схему кэша HuggingFace, что и том `/var/lib/whisper` проекта ScribeCrate. Если вы уже скачали модель с помощью ScribeCrate, можно примонтировать тот же каталог тома, чтобы избежать повторной загрузки.
 
 ## Управление сервером
 
