@@ -4,23 +4,20 @@
 
 [![Build Status](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-Part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack) — deploy a complete self-hosted AI stack with a single command.
-
 Docker image to run a [WhisperLive](https://github.com/collabora/WhisperLive) real-time speech-to-text server, powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Provides WebSocket streaming for live audio transcription and an OpenAI-compatible REST API for file transcription. Based on Debian (python:3.12-slim). Designed to be simple, private, and self-hosted.
 
 **Features:**
 
-- Real-time WebSocket streaming — transcribe live microphone audio or audio streams with near-instant results
-- OpenAI-compatible REST API — `POST /v1/audio/transcriptions` for file transcription; any app using the OpenAI Whisper API switches with a one-line change
-- Supports all Whisper models: `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo` and more
-- Voice Activity Detection (VAD) — automatically skips silence for faster, cleaner transcription
-- Model management via a helper script (`whisper_live_manage`)
-- Audio stays on your server — no data sent to third parties
-- NVIDIA GPU (CUDA) acceleration for faster inference (`:cuda` image tag)
-- Offline/air-gapped mode — run without internet access using pre-cached models (`WHISPERLIVE_LOCAL_ONLY`)
-- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions)
-- Persistent model cache via a Docker volume
-- Multi-arch: `linux/amd64`, `linux/arm64`
+- **Real-time WebSocket transcription:** transcribe live microphone audio or audio streams with near-instant results.
+- **OpenAI-compatible API:** `POST /v1/audio/transcriptions` for uploaded-file transcription from compatible OpenAI SDKs and apps.
+- **Private, local processing:** audio stays on your server and is not sent to third parties.
+- **Voice activity detection (VAD):** automatically skips silence for faster, cleaner transcription.
+- **Whisper models:** supports all Whisper models, including `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo` and more.
+- **CPU and GPU support:** run on CPU or use the `:cuda` image for NVIDIA GPU acceleration.
+- **Offline operation:** run without internet access using pre-cached models (`WHISPERLIVE_LOCAL_ONLY`).
+- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions).
+
+Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack), which deploys a complete self-hosted AI stack with a single command.
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) is a practical guide to building, securing, and operating your own private AI stack.
 

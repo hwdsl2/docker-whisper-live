@@ -4,23 +4,20 @@
 
 [![建置狀態](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md) 的一部分 ─ 一條命令部署完整的自託管 AI 技術棧。
-
 使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中執行 [WhisperLive](https://github.com/collabora/WhisperLive) 即時語音轉文字伺服器。提供用於即時音訊轉錄的 WebSocket 串流，以及用於檔案轉錄的 OpenAI 相容 REST API。基於 Debian (python:3.12-slim)，簡單、私密、可自架。
 
 **功能特色：**
 
-- 即時 WebSocket 串流 — 以近乎即時的方式轉錄即時麥克風音訊或音訊串流
-- OpenAI 相容 REST API — 提供 `POST /v1/audio/transcriptions` 檔案轉錄端點；任何呼叫 OpenAI Whisper API 的應用程式只需修改一行設定即可切換
-- 支援所有 Whisper 模型：`tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 等
-- 語音活動偵測（VAD）— 自動略過靜音段，實現更快、更乾淨的轉錄
-- 透過輔助腳本 (`whisper_live_manage`) 管理模型
-- 音訊資料保留在您的伺服器上，不傳送給第三方
-- NVIDIA GPU (CUDA) 加速推論（使用 `:cuda` 映像標籤）
-- 離線/隔離網路模式 — 使用預先快取的模型，無需網際網路存取 (`WHISPERLIVE_LOCAL_ONLY`)
-- 透過 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions) 自動建置和發佈
-- 透過 Docker 資料卷持久化模型快取
-- 多架構支援：`linux/amd64`、`linux/arm64`
+- **即時 WebSocket 轉錄：** 以近乎即時的方式轉錄即時麥克風音訊或音訊串流
+- **相容 OpenAI 的 API：** 透過 `POST /v1/audio/transcriptions` 為相容的 OpenAI SDK 與應用程式提供上傳檔案轉錄。
+- **私密的本地處理：** 音訊資料保留在您的伺服器上，不傳送給第三方
+- **語音活動偵測 (VAD)：** 自動略過靜音段，實現更快、更乾淨的轉錄
+- **Whisper 模型：** 支援所有 Whisper 模型，包括 `tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 等
+- **CPU 與 GPU 支援：** 可在 CPU 上執行，或使用 `:cuda` 映像啟用 NVIDIA GPU 加速。
+- **離線執行：** 使用預先快取的模型，無需網際網路存取 (`WHISPERLIVE_LOCAL_ONLY`)
+- **自動建置：** 透過 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions) 自動建置和發佈
+
+也可作為 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md) 的一部分使用，一條命令即可部署完整的自託管 AI 技術堆疊。
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) 是一本關於建置、保護和維運自己的私有 AI 技術堆疊的實用指南。
 

@@ -4,23 +4,20 @@
 
 [![Статус сборки](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-Часть [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md) — разверните полный самостоятельно размещённый AI-стек одной командой.
-
 Docker-образ для запуска сервера [WhisperLive](https://github.com/collabora/WhisperLive) с транскрибированием речи в реальном времени на базе [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Предоставляет потоковую передачу через WebSocket для распознавания живого аудио и совместимый с OpenAI REST API для транскрибирования файлов. Основан на Debian (python:3.12-slim). Простой, приватный, для самостоятельного развёртывания.
 
 **Возможности:**
 
-- Потоковая передача через WebSocket в реальном времени — транскрибирование живого аудио с микрофона или потоков с минимальной задержкой
-- Совместимый с OpenAI REST API — `POST /v1/audio/transcriptions` для файлового транскрибирования; любое приложение, использующее OpenAI Whisper API, переключается одной строкой
-- Поддержка всех моделей Whisper: `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo` и других
-- Обнаружение голосовой активности (VAD) — автоматически пропускает тишину для более быстрого и чистого транскрибирования
-- Управление моделями через вспомогательный скрипт (`whisper_live_manage`)
-- Аудио остаётся на вашем сервере — данные не передаются третьим сторонам
-- Ускорение на GPU NVIDIA (CUDA) для более быстрого инференса (тег образа `:cuda`)
-- Офлайн-режим — работа без доступа к интернету с предварительно загруженными моделями (`WHISPERLIVE_LOCAL_ONLY`)
-- Автоматическая сборка и публикация через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions)
-- Постоянный кэш моделей через Docker-том
-- Мультиархитектурная поддержка: `linux/amd64`, `linux/arm64`
+- **Транскрипция по WebSocket в реальном времени:** транскрибирование живого аудио с микрофона или потоков с минимальной задержкой
+- **Совместимый с OpenAI API:** `POST /v1/audio/transcriptions` для транскрипции загруженных файлов из совместимых OpenAI SDK и приложений.
+- **Конфиденциальная локальная обработка:** Аудио остаётся на вашем сервере — данные не передаются третьим сторонам
+- **Определение речевой активности (VAD):** автоматически пропускает тишину для более быстрого и чистого транскрибирования
+- **Модели Whisper:** поддержка всех моделей Whisper, включая `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo` и другие
+- **Поддержка CPU и GPU:** работа на CPU или ускорение на GPU NVIDIA с образом `:cuda`.
+- **Работа без интернета:** работа без доступа к интернету с предварительно загруженными моделями (`WHISPERLIVE_LOCAL_ONLY`)
+- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions).
+
+Также доступен в составе [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md), который развёртывает полный AI-стек на собственном сервере одной командой.
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon): практическое руководство по созданию, защите и эксплуатации собственного приватного ИИ-стека.
 

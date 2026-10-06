@@ -4,23 +4,20 @@
 
 [![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
 
-[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分 ─ 一条命令部署完整的自托管 AI 技术栈。
-
 使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 WebSocket 流式传输，以及用于文件转录的 OpenAI 兼容 REST API。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
 
 **功能特性：**
 
-- 实时 WebSocket 流式传输 — 以近乎即时的方式转录实时麦克风音频或音频流
-- OpenAI 兼容 REST API — 提供 `POST /v1/audio/transcriptions` 文件转录接口；任何调用 OpenAI Whisper API 的应用只需修改一行配置即可切换
-- 支持所有 Whisper 模型：`tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 等
-- 语音活动检测（VAD）— 自动跳过静音段，实现更快、更干净的转录
-- 通过辅助脚本 (`whisper_live_manage`) 管理模型
-- 音频数据留在您的服务器上，不发送给第三方
-- NVIDIA GPU (CUDA) 加速推理（使用 `:cuda` 镜像标签）
-- 离线/隔离网络模式 — 使用预先缓存的模型无需互联网访问 (`WHISPERLIVE_LOCAL_ONLY`)
-- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions) 自动构建和发布
-- 通过 Docker 数据卷持久化模型缓存
-- 多架构支持：`linux/amd64`、`linux/arm64`
+- **实时 WebSocket 转录：** 以近乎即时的方式转录实时麦克风音频或音频流
+- **兼容 OpenAI 的 API：** 通过 `POST /v1/audio/transcriptions` 为兼容的 OpenAI SDK 和应用提供上传文件转录。
+- **私密的本地处理：** 音频数据留在您的服务器上，不发送给第三方
+- **语音活动检测 (VAD)：** 自动跳过静音段，实现更快、更干净的转录
+- **Whisper 模型：** 支持所有 Whisper 模型，包括 `tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 等
+- **CPU 和 GPU 支持：** 可在 CPU 上运行，或使用 `:cuda` 镜像启用 NVIDIA GPU 加速。
+- **离线运行：** 使用预先缓存的模型无需互联网访问 (`WHISPERLIVE_LOCAL_ONLY`)
+- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions) 自动构建和发布
+
+也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) 是一本关于构建、保护和运维自己的私有 AI 技术栈的实用指南。
 
