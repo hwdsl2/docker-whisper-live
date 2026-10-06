@@ -429,7 +429,7 @@ Content-Type: multipart/form-data
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `file` | file | ✅ | Audio file. Supported formats: `mp3`, `mp4`, `m4a`, `wav`, `webm`, `ogg`, `flac` and all other formats supported by ffmpeg. |
-| `model` | string | ✅ | Pass `whisper-1` (value is accepted but ignored; the active `WHISPERLIVE_MODEL` is always used). |
+| `model` | string | ✅ | Pass `whisper-1` to use the active `WHISPERLIVE_MODEL`, or a stock Whisper size (e.g. `small`, `medium`, `large-v3`) to transcribe this request with a different model. Unrecognized values fall back to `WHISPERLIVE_MODEL`. |
 | `language` | string | — | BCP-47 language code (e.g. `en`, `fr`, `zh`). If omitted, language is autodetected. |
 
 **Example:**
