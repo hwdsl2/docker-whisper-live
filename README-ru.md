@@ -1,21 +1,25 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# WhisperLive — Распознавание речи в реальном времени на Docker
+# ScribeCrate Live
 
-[![Статус сборки](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
+**Сервер транскрипции в реальном времени с открытым исходным кодом для самостоятельного размещения.**
 
-Docker-образ для запуска сервера [WhisperLive](https://github.com/collabora/WhisperLive) с транскрибированием речи в реальном времени на базе [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Предоставляет потоковую передачу через WebSocket для распознавания живого аудио и совместимый с OpenAI REST API для транскрибирования файлов. Основан на Debian (python:3.12-slim). Простой, приватный, для самостоятельного развёртывания.
+[![Статус сборки](https://github.com/hwdsl2/scribecrate-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/scribecrate-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://selfhostedaistack.com/scribecrate-live-notebook)
+
+ScribeCrate Live представляет собой сервер транскрипции речи в реальном времени для самостоятельного размещения на базе [WhisperLive](https://github.com/collabora/WhisperLive) и [faster-whisper](https://github.com/SYSTRAN/faster-whisper). Предоставляет транскрипцию аудио с микрофона и аудиопотоков через WebSocket, а также совместимый с OpenAI REST API для аудиофайлов. Развёртывается с помощью Docker на CPU или NVIDIA GPU. Образ основан на Debian (python:3.12-slim).
+
+> Ранее проект назывался **docker-whisper-live**, сопровождается [hwdsl2](https://github.com/hwdsl2). Docker-образ остаётся `hwdsl2/whisper-live-server`; существующая конфигурация, API-эндпоинты и постоянные данные сохраняют совместимость.
 
 **Возможности:**
 
-- **Транскрипция по WebSocket в реальном времени:** транскрибирование живого аудио с микрофона или потоков с минимальной задержкой
+- **Транскрипция по WebSocket в реальном времени:** транскрибирование аудио с микрофона или аудиопотоков с постепенным обновлением сегментов
 - **Совместимый с OpenAI API:** `POST /v1/audio/transcriptions` для транскрипции загруженных файлов из совместимых OpenAI SDK и приложений.
 - **Конфиденциальная локальная обработка:** Аудио остаётся на вашем сервере — данные не передаются третьим сторонам
 - **Определение речевой активности (VAD):** автоматически пропускает тишину для более быстрого и чистого транскрибирования
 - **Модели Whisper:** поддержка всех моделей Whisper, включая `tiny`, `base`, `small`, `medium`, `large-v3`, `large-v3-turbo` и другие
 - **Поддержка CPU и GPU:** работа на CPU или ускорение на GPU NVIDIA с образом `:cuda`.
 - **Работа без интернета:** работа без доступа к интернету с предварительно загруженными моделями (`WHISPERLIVE_LOCAL_ONLY`)
-- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions).
+- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/scribecrate-live/actions).
 
 Также доступен в составе [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md), который развёртывает полный AI-стек на собственном сервере одной командой.
 
@@ -23,12 +27,12 @@ Docker-образ для запуска сервера [WhisperLive](https://git
 
 **Также доступно:**
 
-- Попробовать онлайн: [Открыть в Colab](https://vpnsetup.net/whisper-live-notebook) — Docker и установка не требуются
-- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
+- Попробовать онлайн: [Открыть в Colab](https://selfhostedaistack.com/scribecrate-live-notebook) — Docker и установка не требуются
+- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-ru.md), [Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
 ## Быстрый старт
 
-Запустите сервер WhisperLive:
+Запустите сервер ScribeCrate Live:
 
 ```bash
 docker run \
@@ -71,7 +75,7 @@ docker run \
 docker logs whisper-live
 ```
 
-После появления "WhisperLive real-time transcription server is ready":
+После появления "ScribeCrate Live real-time transcription server is ready":
 
 В новых постоянных установках аутентификация по API-ключу включается автоматически. Получите ключ:
 
@@ -111,13 +115,13 @@ curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
     -F model=whisper-1
 ```
 
-## WhisperLive и ScribeCrate: что выбрать
+## ScribeCrate и ScribeCrate Live: что выбрать
 
-| | [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md) | **docker-whisper-live** |
+| | [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md) | **ScribeCrate Live** |
 |---|---|---|
 | **Назначение** | Транскрибирование готовых аудиофайлов | Живой микрофон / потоковое аудио в реальном времени |
 | **Протокол** | HTTP REST | WebSocket (потоковый) + HTTP REST |
-| **Задержка** | JSON после обработки; сегменты через SSE | Почти мгновенно, слово за словом |
+| **Задержка** | JSON после обработки; сегменты через SSE | Постепенные обновления сегментов |
 | **Подходит для** | Записи совещаний, загруженные аудиофайлы | Захват в браузере, RTSP-потоки, живые субтитры |
 | **Размер образа** | ~190 МБ (~3,1 ГБ для `:cuda`) | ~750 МБ (~4,5 ГБ для `:cuda`) |
 
@@ -516,7 +520,7 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
 
 ## Защита сервера
 
-Если ваш сервер WhisperLive доступен из публичной сети — даже кратковременно — примените как минимум следующие меры защиты. WhisperLive требует значительных ресурсов CPU/GPU, поэтому незащищённая конечная точка может быть использована для расходования ваших вычислительных ресурсов.
+Если ваш сервер ScribeCrate Live доступен из публичной сети — даже кратковременно — примените как минимум следующие меры защиты. ScribeCrate Live требует значительных ресурсов CPU/GPU, поэтому незащищённая конечная точка может быть использована для расходования ваших вычислительных ресурсов.
 
 **1. Используйте API-ключ.** Новые установки с подключённым томом `/var/lib/whisper-live` автоматически генерируют API-ключ. Его можно посмотреть командой `docker exec whisper-live whisper_live_manage --showkey`; в скриптах используйте `docker exec whisper-live whisper_live_manage --getkey`. Существующие установки без ключа остаются открытыми для обратной совместимости; также можно задать `WHISPERLIVE_API_KEY` в env-файле вручную. REST-клиенты должны отправлять `Authorization: Bearer <key>`; WebSocket-клиенты могут отправлять тот же заголовок или добавить `?token=<key>` к URL.
 
@@ -634,9 +638,9 @@ docker rm -f whisper-live
 
 ## Использование с другими AI-сервисами
 
-WhisperLive можно использовать как службу распознавания речи в реальном времени в более широком self-hosted AI-стеке.
+ScribeCrate Live можно использовать как службу распознавания речи в реальном времени в более широком self-hosted AI-стеке.
 
-Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с Kokoro, Embeddings, LiteLLM, Ollama, Docling и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
+Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с SpeakCrate, Embeddings, LiteLLM, Ollama, ParseCrate и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
 
 ## Счётчики использования
 

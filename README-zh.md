@@ -1,21 +1,25 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# WhisperLive 实时语音转文字 Docker 镜像
+# ScribeCrate Live
 
-[![构建状态](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-whisper-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://vpnsetup.net/whisper-live-notebook)
+**开源、自托管的实时转录服务器。**
 
-使用 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 在 Docker 容器中运行 [WhisperLive](https://github.com/collabora/WhisperLive) 实时语音转文字服务器。提供用于实时音频转录的 WebSocket 流式传输，以及用于文件转录的 OpenAI 兼容 REST API。基于 Debian (python:3.12-slim)，简单、私密、可自托管。
+[![构建状态](https://github.com/hwdsl2/scribecrate-live/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/scribecrate-live/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-whisper-live-server.svg)](https://hub.docker.com/r/hwdsl2/whisper-live-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT) &nbsp;[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://selfhostedaistack.com/scribecrate-live-notebook)
+
+ScribeCrate Live 是一个自托管的实时语音转文字服务器，由 [WhisperLive](https://github.com/collabora/WhisperLive) 和 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) 提供支持。它提供用于实时麦克风音频和音频流转录的 WebSocket 服务，以及用于音频文件转录的 OpenAI 兼容 REST API。可使用 Docker 在 CPU 或 NVIDIA GPU 上部署。镜像基于 Debian（python:3.12-slim）。
+
+> 此项目原名为 **docker-whisper-live**，由 [hwdsl2](https://github.com/hwdsl2) 维护。Docker 镜像仍为 `hwdsl2/whisper-live-server`；现有配置、API 端点和持久化数据保持兼容。
 
 **功能特性：**
 
-- **实时 WebSocket 转录：** 以近乎即时的方式转录实时麦克风音频或音频流
+- **实时 WebSocket 转录：** 转录实时麦克风音频或音频流，并逐步返回分段结果
 - **兼容 OpenAI 的 API：** 通过 `POST /v1/audio/transcriptions` 为兼容的 OpenAI SDK 和应用提供上传文件转录。
 - **私密的本地处理：** 音频数据留在您的服务器上，不发送给第三方
 - **语音活动检测 (VAD)：** 自动跳过静音段，实现更快、更干净的转录
 - **Whisper 模型：** 支持所有 Whisper 模型，包括 `tiny`、`base`、`small`、`medium`、`large-v3`、`large-v3-turbo` 等
 - **CPU 和 GPU 支持：** 可在 CPU 上运行，或使用 `:cuda` 镜像启用 NVIDIA GPU 加速。
 - **离线运行：** 使用预先缓存的模型无需互联网访问 (`WHISPERLIVE_LOCAL_ONLY`)
-- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/docker-whisper-live/actions) 自动构建和发布
+- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/scribecrate-live/actions) 自动构建和发布
 
 也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
@@ -23,12 +27,12 @@
 
 **另提供：**
 
-- 在线试用：[在 Colab 中打开](https://vpnsetup.net/whisper-live-notebook)——无需 Docker 或安装
-- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
+- 在线试用：[在 Colab 中打开](https://selfhostedaistack.com/scribecrate-live-notebook)——无需 Docker 或安装
+- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-zh.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
 
 ## 快速开始
 
-使用以下命令启动 WhisperLive 服务器：
+使用以下命令启动 ScribeCrate Live 服务器：
 
 ```bash
 docker run \
@@ -71,7 +75,7 @@ docker run \
 docker logs whisper-live
 ```
 
-看到 "WhisperLive real-time transcription server is ready" 后：
+看到 "ScribeCrate Live real-time transcription server is ready" 后：
 
 新的持久化安装会自动启用 API 密钥认证。获取密钥：
 
@@ -111,13 +115,13 @@ curl http://您的服务器IP:8000/v1/audio/transcriptions \
     -F model=whisper-1
 ```
 
-## WhisperLive 与 ScribeCrate 的选择
+## ScribeCrate 与 ScribeCrate Live 的选择
 
-| | [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md) | **docker-whisper-live** |
+| | [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md) | **ScribeCrate Live** |
 |---|---|---|
 | **使用场景** | 转录完整音频文件 | 实时麦克风/音频流 |
 | **协议** | HTTP REST | WebSocket（流式）+ HTTP REST |
-| **延迟** | 处理完成后返回 JSON；SSE 逐段返回 | 近实时，逐词输出 |
+| **延迟** | 处理完成后返回 JSON；SSE 逐段返回 | 逐步返回分段结果 |
 | **适合** | 会议录音、上传的音频文件 | 浏览器采集、RTSP 流、实时字幕 |
 | **镜像大小** | ~190 MB（`:cuda` 约 3.1 GB） | ~750 MB（`:cuda` 约 4.5 GB） |
 
@@ -538,7 +542,7 @@ docker exec whisper-live whisper_live_manage --downloadmodel large-v3-turbo
 
 ## 保护你的服务器
 
-如果你的 WhisperLive 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。WhisperLive 对 CPU/GPU 资源消耗较大，未做防护的接口可能被滥用，浪费你的计算资源。
+如果你的 ScribeCrate Live 服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。ScribeCrate Live 对 CPU/GPU 资源消耗较大，未做防护的接口可能被滥用，浪费你的计算资源。
 
 **1. 使用 API 密钥。** 挂载 `/var/lib/whisper-live` 数据卷的新安装会自动生成 API 密钥。可用 `docker exec whisper-live whisper_live_manage --showkey` 查看；脚本中可用 `docker exec whisper-live whisper_live_manage --getkey`。没有密钥的既有安装会保持开放以兼容旧行为；也可以在 `env` 文件中设置 `WHISPERLIVE_API_KEY` 手动启用认证。REST 客户端需发送 `Authorization: Bearer <key>`；WebSocket 客户端可发送相同请求头或在 URL 中添加 `?token=<key>`。
 
@@ -671,9 +675,9 @@ docker rm -f whisper-live
 
 ## 与其他 AI 服务配合使用
 
-WhisperLive 可作为更广泛的自托管 AI 设置中的实时语音转文字服务。
+ScribeCrate Live 可作为更广泛的自托管 AI 设置中的实时语音转文字服务。
 
-如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 Kokoro、Embeddings、LiteLLM、Ollama、Docling 和 MCP Gateway 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
+如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 SpeakCrate、Embeddings、LiteLLM、Ollama、ParseCrate 和 MCP Gateway 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
 
 ## 使用计数
 
