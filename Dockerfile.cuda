@@ -18,6 +18,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY ./patches/whisperlive-0.9.0-websocket-auth.patch /tmp/
 
+# PyAV 19 removed metadata_errors, which faster-whisper's decoder still uses.
 RUN set -x \
     && apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl gcc libc6-dev patch portaudio19-dev \
@@ -28,6 +29,7 @@ RUN set -x \
          "whisper-live==$WHISPERLIVE_VERSION" \
          "websockets==$WEBSOCKETS_VERSION" \
          faster-whisper \
+         "av>=11,<19" \
          fastapi \
          uvicorn \
          python-multipart \
