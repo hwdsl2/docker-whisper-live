@@ -80,7 +80,7 @@ docker logs whisper-live
 新的持久化安装会自动启用 API 密钥认证。获取密钥：
 
 ```bash
-API_KEY=$(docker exec whisper-live whisper_live_manage --getkey)
+scribe_live_api_key="$(docker exec whisper-live whisper_live_manage --getkey)"
 ```
 
 **连接实时 WebSocket 客户端：**
@@ -93,7 +93,7 @@ ws://您的服务器IP:9090/?token=您的API密钥
 
 ```bash
 curl http://您的服务器IP:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@audio.mp3 \
     -F model=whisper-1
 ```
@@ -110,7 +110,7 @@ curl -L -o sample_speech.wav \
     "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
 
 curl http://您的服务器IP:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@sample_speech.wav \
     -F model=whisper-1
 ```
@@ -415,10 +415,10 @@ ws.onmessage = (event) => {
 新的持久化安装需要 API 密钥。获取密钥以用于以下示例：
 
 ```bash
-API_KEY="$(docker exec whisper-live whisper_live_manage --getkey)"
+scribe_live_api_key="$(docker exec whisper-live whisper_live_manage --getkey)"
 
 export OPENAI_BASE_URL="http://您的服务器IP:8000/v1"
-export OPENAI_API_KEY="$API_KEY"
+export OPENAI_API_KEY="$scribe_live_api_key"
 ```
 
 如果已禁用 API 密钥认证，请省略 curl 示例中的 `Authorization` 请求头。OpenAI SDK 客户端仍要求提供非空密钥；此时请设置 `OPENAI_API_KEY=unused`。
@@ -442,7 +442,7 @@ Content-Type: multipart/form-data
 
 ```bash
 curl http://您的服务器IP:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@meeting.m4a \
     -F model=whisper-1 \
     -F language=zh

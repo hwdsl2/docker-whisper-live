@@ -80,7 +80,7 @@ docker logs whisper-live
 В новых постоянных установках аутентификация по API-ключу включается автоматически. Получите ключ:
 
 ```bash
-API_KEY=$(docker exec whisper-live whisper_live_manage --getkey)
+scribe_live_api_key="$(docker exec whisper-live whisper_live_manage --getkey)"
 ```
 
 **Подключение WebSocket-клиента в реальном времени:**
@@ -93,7 +93,7 @@ ws://ip_вашего_сервера:9090/?token=ВАШ_API_КЛЮЧ
 
 ```bash
 curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@audio.mp3 \
     -F model=whisper-1
 ```
@@ -110,7 +110,7 @@ curl -L -o sample_speech.wav \
     "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
 
 curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@sample_speech.wav \
     -F model=whisper-1
 ```
@@ -411,10 +411,10 @@ REST API на порту `8000` совместим с [эндпоинтом Open
 Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
 
 ```bash
-API_KEY="$(docker exec whisper-live whisper_live_manage --getkey)"
+scribe_live_api_key="$(docker exec whisper-live whisper_live_manage --getkey)"
 
 export OPENAI_BASE_URL="http://ip_вашего_сервера:8000/v1"
-export OPENAI_API_KEY="$API_KEY"
+export OPENAI_API_KEY="$scribe_live_api_key"
 ```
 
 Если аутентификация по API-ключу отключена, опустите заголовок `Authorization` в примерах curl. Клиентам OpenAI SDK по-прежнему нужен непустой ключ; в этом случае задайте `OPENAI_API_KEY=unused`.
@@ -438,7 +438,7 @@ Content-Type: multipart/form-data
 
 ```bash
 curl http://ip_вашего_сервера:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@meeting.m4a \
     -F model=whisper-1 \
     -F language=ru

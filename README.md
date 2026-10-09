@@ -78,7 +78,7 @@ Once you see "ScribeCrate Live real-time transcription server is ready":
 Fresh persistent installations enable API-key authentication automatically. Retrieve the key:
 
 ```bash
-API_KEY=$(docker exec whisper-live whisper_live_manage --getkey)
+scribe_live_api_key="$(docker exec whisper-live whisper_live_manage --getkey)"
 ```
 
 **Connect a real-time WebSocket client:**
@@ -91,7 +91,7 @@ ws://your_server_ip:9090/?token=YOUR_API_KEY
 
 ```bash
 curl http://your_server_ip:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@audio.mp3 \
     -F model=whisper-1
 ```
@@ -108,7 +108,7 @@ curl -L -o sample_speech.wav \
     "https://github.com/Azure-Samples/cognitive-services-speech-sdk/raw/master/sampledata/audiofiles/katiesteve.wav"
 
 curl http://your_server_ip:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@sample_speech.wav \
     -F model=whisper-1
 ```
@@ -413,10 +413,10 @@ The REST API at port `8000` is compatible with [OpenAI's audio transcription end
 Fresh persistent installations require an API key. Retrieve it for the following examples:
 
 ```bash
-API_KEY="$(docker exec whisper-live whisper_live_manage --getkey)"
+scribe_live_api_key="$(docker exec whisper-live whisper_live_manage --getkey)"
 
 export OPENAI_BASE_URL="http://your_server_ip:8000/v1"
-export OPENAI_API_KEY="$API_KEY"
+export OPENAI_API_KEY="$scribe_live_api_key"
 ```
 
 If API key authentication is disabled, omit the `Authorization` header in curl examples. OpenAI SDK clients still require a nonempty key; set `OPENAI_API_KEY=unused`.
@@ -440,7 +440,7 @@ Content-Type: multipart/form-data
 
 ```bash
 curl http://your_server_ip:8000/v1/audio/transcriptions \
-    -H "Authorization: Bearer $API_KEY" \
+    -H "Authorization: Bearer $scribe_live_api_key" \
     -F file=@meeting.m4a \
     -F model=whisper-1 \
     -F language=en
